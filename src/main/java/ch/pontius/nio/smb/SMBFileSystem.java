@@ -17,6 +17,9 @@ public final class SMBFileSystem extends FileSystem {
     /** Default separator between scheme and the rest of the path. */
     static final String SCHEME_SEPARATOR = "://";
 
+    /** URI scheme supported by SMBFileSystemProvider. */
+    static final String SMB_SCHEME = "smb";
+
     /** Creates and initializes the set containing the supported FILE_ATTRIBUTE_VIEWS. */
     private static final Set<String> SUPPORTED_FILE_ATTRIBUTE_VIEWS = new HashSet<>();
     static {
@@ -83,7 +86,7 @@ public final class SMBFileSystem extends FileSystem {
 
     @Override
     public Path getPath(String first, String... more) {
-        final StringBuilder buffer = new StringBuilder(SMBFileSystemProvider.SMB_SCHEME + SMBFileSystem.SCHEME_SEPARATOR);
+        final StringBuilder buffer = new StringBuilder(SMBFileSystem.SMB_SCHEME + SMBFileSystem.SCHEME_SEPARATOR + this.identifier);
         buffer.append(first);
         for (String component : more) {
             buffer.append(SMBFileSystem.PATH_SEPARATOR);
@@ -98,16 +101,31 @@ public final class SMBFileSystem extends FileSystem {
         }
     }
 
+    /**
+     *
+     * @param syntaxAndPattern
+     * @return
+     */
     @Override
     public PathMatcher getPathMatcher(String syntaxAndPattern) {
         return null;
     }
 
+    /**
+     * {@link UserPrincipalLookupService} are not supported by the current version of {@link SMBFileSystem}.
+     *
+     * @throws UnsupportedOperationException Always
+     */
     @Override
     public UserPrincipalLookupService getUserPrincipalLookupService() {
         throw new UnsupportedOperationException("The SMBFileSystem does not support UserPrincipalLookupServices.");
     }
 
+    /**
+     * {@link WatchService} are not supported by the current version of {@link SMBFileSystem}.
+     *
+     * @throws UnsupportedOperationException Always
+     */
     @Override
     public WatchService newWatchService() throws IOException {
         throw new UnsupportedOperationException("The SMBFileSystem does not support WatchService.");

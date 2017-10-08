@@ -18,12 +18,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class SMBFileSystemProvider extends FileSystemProvider {
+public final class SMBFileSystemProvider extends FileSystemProvider {
 
-    /** URI scheme supported by SMBFileSystemProvider. */
-    static final String SMB_SCHEME = "smb";
-
-    /** Local fileSystemCache of {@link SMBFileSystem} instances. */
+    /** Local cache of {@link SMBFileSystem} instances. */
     private final Map<String ,SMBFileSystem> fileSystemCache;
 
     /** Default constructor for {@link SMBFileSystemProvider}. */
@@ -38,7 +35,7 @@ public class SMBFileSystemProvider extends FileSystemProvider {
      */
     @Override
     public String getScheme() {
-        return SMB_SCHEME;
+        return SMBFileSystem.SMB_SCHEME;
     }
 
     /**
@@ -54,7 +51,7 @@ public class SMBFileSystemProvider extends FileSystemProvider {
      */
     @Override
     public SMBFileSystem newFileSystem(URI uri, Map<String, ?> env) {
-        if (!uri.getScheme().equals(SMB_SCHEME)) throw new IllegalArgumentException("The provided URI is not an SMB URI.");
+        if (!uri.getScheme().equals(SMBFileSystem.SMB_SCHEME)) throw new IllegalArgumentException("The provided URI is not an SMB URI.");
         if (this.fileSystemCache.containsKey(uri.getAuthority())) throw new FileSystemAlreadyExistsException("Filesystem for the provided server 'smb://" + uri.getAuthority() + "' does already exist.");
         SMBFileSystem system = new SMBFileSystem(uri.getAuthority(), this, env);
         this.fileSystemCache.put(uri.getAuthority(), system);
@@ -73,7 +70,7 @@ public class SMBFileSystemProvider extends FileSystemProvider {
      */
     @Override
     public SMBFileSystem getFileSystem(URI uri) {
-        if (!uri.getScheme().equals(SMB_SCHEME)) throw new IllegalArgumentException("The provided URI is not an SMB URI.");
+        if (!uri.getScheme().equals(SMBFileSystem.SMB_SCHEME)) throw new IllegalArgumentException("The provided URI is not an SMB URI.");
         if (this.fileSystemCache.containsKey(uri.getAuthority())) {
             return this.fileSystemCache.get(uri.getAuthority());
         } else {
@@ -91,7 +88,7 @@ public class SMBFileSystemProvider extends FileSystemProvider {
      */
     @Override
     public SMBPath getPath(URI uri) {
-        if (!uri.getScheme().equals(SMB_SCHEME)) throw new IllegalArgumentException("The provided URI is not an SMB URI.");
+        if (!uri.getScheme().equals(SMBFileSystem.SMB_SCHEME)) throw new IllegalArgumentException("The provided URI is not an SMB URI.");
         if (this.fileSystemCache.containsKey(uri.getAuthority())) {
             return new SMBPath(this.getFileSystem(uri), uri);
         } else {
@@ -100,16 +97,19 @@ public class SMBFileSystemProvider extends FileSystemProvider {
     }
 
     /**
+     * Creates and returns a new {@link SeekableSMBByteChannel} instance.
      *
-     * @param path
-     * @param options
-     * @param attrs
-     * @return
-     * @throws IOException
+     * @param path The {@link SMBPath} for which a byte channel should be opened.
+     * @param options A set of {@link StandardOpenOption}s.
+     * @param attrs An optional list of file attributes to set when creating the file.
+     * @return An instance of {@link SeekableSMBByteChannel}.
+     *
+     * @throws IllegalArgumentException If provided path is not an {@link SMBPath} instance.
+     * @throws IOException If an I/O error occurs
+     * @throws UnsupportedOperationException If an unsupported open option is specified (DSYNC, SYNC or SPARSE)
      */
     @Override
     public SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
-
         /* Convert path and instantiate SmbFile. */
         final SMBPath smbPath = SMBPath.fromPath(path);
         final SmbFile file = smbPath.getSmbFile();
@@ -130,6 +130,8 @@ public class SMBFileSystemProvider extends FileSystemProvider {
                 check = true;
             } else if (option.equals(StandardOpenOption.APPEND)) {
                 append = true;
+            } else if (option.equals(StandardOpenOption.DSYNC) || option.equals(StandardOpenOption.SYNC) || option.equals(StandardOpenOption.SPARSE)) {
+                throw new UnsupportedOperationException("SMBFileSystemProvider does not support the option options SYNC, DSYNC or SPARSE");
             }
         }
 
@@ -147,11 +149,15 @@ public class SMBFileSystemProvider extends FileSystemProvider {
     }
 
     /**
+     * Creates and returns a new {@link SMBDirectoryStream} for the specified path.
      *
-     * @param dir
-     * @param filter
-     * @return
-     * @throws IOException
+     * @param dir The {@link SMBPath} for which to create a new DirectoryStream.
+     * @param filter An optional filter that should be applied to filter entries in the stream.
+     * @return An instance of {@link SMBDirectoryStream}.
+     *
+     * @throws IllegalArgumentException If provided path is not an {@link SMBPath} instance.
+     * @throws NotDirectoryException If provided {@link SMBPath} does not point to a directory
+     * @throws IOException If an I/O error occurs
      */
     @Override
     public DirectoryStream<Path> newDirectoryStream(Path dir, DirectoryStream.Filter<? super Path> filter) throws IOException {
