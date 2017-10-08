@@ -48,7 +48,7 @@ public final class SeekableSMBByteChannel implements SeekableByteChannel {
         final int len = dst.limit() - dst.position();
         final byte[] buffer = new byte[len];
         final int read = this.random.read(buffer);
-        dst.put(buffer, 0, read);
+        if (read > 0) dst.put(buffer, 0, read);
         return read;
     }
 
