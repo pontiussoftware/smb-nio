@@ -143,5 +143,6 @@ public final class SeekableSMBByteChannel implements SeekableByteChannel {
     public synchronized void close() throws IOException {
         if (!this.open) throw new ClosedChannelException();
         this.open = false;
+        this.random.close();
     }
 }
