@@ -30,7 +30,7 @@ public final class SMBDirectoryStream implements DirectoryStream<Path> {
      * @throws NotDirectoryException If provided {@link SMBPath} does not point to a directory.
      * @throws IOException If something goes wrong while reading the content of the directory.
      */
-    public SMBDirectoryStream(SMBPath smbPath, java.nio.file.DirectoryStream.Filter<? super Path> filter) throws IOException, NotDirectoryException {
+    public SMBDirectoryStream(SMBPath smbPath, java.nio.file.DirectoryStream.Filter<? super Path> filter) throws IOException {
         if (!smbPath.getSmbFile().isDirectory()) throw new NotDirectoryException("The provided path '" + smbPath.toString() + "' is not a directory.");
         this.content = new ArrayList<>();
         for (String name : smbPath.getSmbFile().list()) {
