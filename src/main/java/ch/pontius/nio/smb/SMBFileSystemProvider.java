@@ -155,7 +155,7 @@ public class SMBFileSystemProvider extends FileSystemProvider {
      */
     @Override
     public DirectoryStream<Path> newDirectoryStream(Path dir, DirectoryStream.Filter<? super Path> filter) throws IOException {
-        return null;
+        return new SMBDirectoryStream(SMBPath.fromPath(dir), filter);
     }
 
     /**
