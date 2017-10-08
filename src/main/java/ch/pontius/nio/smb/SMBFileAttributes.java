@@ -49,17 +49,17 @@ public final class SMBFileAttributes implements BasicFileAttributes {
 
     @Override
     public FileTime lastModifiedTime() {
-        return FileTime.from(this.modified, TimeUnit.SECONDS);
+        return FileTime.from(this.modified, TimeUnit.MILLISECONDS);
     }
 
     @Override
     public FileTime lastAccessTime() {
-        return FileTime.from(0L, TimeUnit.SECONDS);
+        return FileTime.from(0L, TimeUnit.MILLISECONDS);
     }
 
     @Override
     public FileTime creationTime() {
-        return FileTime.from(this.created, TimeUnit.SECONDS);
+        return FileTime.from(this.created, TimeUnit.MILLISECONDS);
     }
 
     @Override

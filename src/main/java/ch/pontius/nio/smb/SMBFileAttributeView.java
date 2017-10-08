@@ -55,7 +55,7 @@ public final class SMBFileAttributeView implements BasicFileAttributeView {
 
     @Override
     public void setTimes(FileTime lastModifiedTime, FileTime lastAccessTime, FileTime createTime) throws IOException {
-        this.file.setLastModified(lastModifiedTime.to(TimeUnit.SECONDS));
-        this.file.setCreateTime(createTime.to(TimeUnit.SECONDS));
+        this.file.setLastModified(lastModifiedTime.to(TimeUnit.MILLISECONDS));
+        this.file.setCreateTime(createTime.to(TimeUnit.MILLISECONDS));
     }
 }
