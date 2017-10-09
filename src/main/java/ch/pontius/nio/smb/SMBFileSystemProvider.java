@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class SMBFileSystemProvider extends FileSystemProvider {
 
     /** Local cache of {@link SMBFileSystem} instances. */
-    private final Map<String ,SMBFileSystem> fileSystemCache;
+    final Map<String ,SMBFileSystem> fileSystemCache;
 
     /** Default constructor for {@link SMBFileSystemProvider}. */
     public SMBFileSystemProvider() {
