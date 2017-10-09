@@ -4,10 +4,8 @@ import jcifs.smb.SmbFile;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.nio.file.*;
 import java.util.*;
 
@@ -61,7 +59,7 @@ public final class SMBPath implements Path {
      * @param fileSystem {@link SMBFileSystem} object this {@link SMBPath} is associated with.
      * @param path The path. It can either be relative or absolute.
      */
-    private SMBPath(SMBFileSystem fileSystem, String path) {
+    SMBPath(SMBFileSystem fileSystem, String path) {
         /* Make sure that path is absolute. */
         this.absolute = SMBPathUtil.isAbsolutePath(path);
         this.folder = SMBPathUtil.isFolder(path);
@@ -369,7 +367,7 @@ public final class SMBPath implements Path {
     public URI toUri() {
         String path = SMBPathUtil.mergePath(this.components, 0, this.components.length, this.absolute, this.folder);
         try {
-            return new URI(SMBFileSystem.SMB_SCHEME, this.fileSystem.getIdentifier(), path, null, null);
+            return new URI(SMBFileSystem.SMB_SCHEME, this.fileSystem.getName(), path, null, null);
         } catch (URISyntaxException e) {
             throw new IllegalStateException("The current instance of SMBPath '" + this.toString() + "' cannot be transformed to a valid URI.");
         }
@@ -436,8 +434,9 @@ public final class SMBPath implements Path {
      * @return {@link SmbFile}
      */
     SmbFile getSmbFile() throws IOException {
+        if (!this.fileSystem.isOpen()) throw new ClosedFileSystemException();
         String path = SMBPathUtil.mergePath(this.components, 0, this.components.length, this.absolute, this.folder);
-        return new SmbFile(SMBFileSystem.SMB_SCHEME + SMBFileSystem.SCHEME_SEPARATOR + this.fileSystem.getIdentifier(), path);
+        return new SmbFile(this.fileSystem.getFQN() + SMBFileSystem.PATH_SEPARATOR + this.fileSystem.getName(), path);
     }
 
     /**
