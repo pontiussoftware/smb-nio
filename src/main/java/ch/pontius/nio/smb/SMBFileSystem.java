@@ -5,21 +5,21 @@ import jcifs.smb.SmbFile;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
+
 import java.nio.file.*;
 import java.nio.file.attribute.FileAttributeView;
 import java.nio.file.attribute.UserPrincipalLookupService;
 import java.nio.file.spi.FileSystemProvider;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
 /**
  * This class represents a single SMB server (filesystem). The authority part of the SMB URI creates a unique {@link SMBFileSystem}, that is,
- * if you connect to the same server with different credentials, it will results in two {@link SMBFileSystem} instances. Furthermore, different
- * names for the same server will result in different {@link SMBFileSystem} instances too.
+ * if you connect to the same server with different credentials, it will results in two distinc {@link SMBFileSystem} instances. Furthermore,
+ * different names for the same server will result in different {@link SMBFileSystem} instances too.
  *
- *
+ * The {@link SMBFileSystem} is the factory for several types of objects, like {@link SMBPath}, {@link SMBFileStore} etc.
  *
  * @author      Ralph Gasser
  * @version     1.0
@@ -176,14 +176,14 @@ public final class SMBFileSystem extends FileSystem {
     }
 
     /**
+     * Returns a new {@link SMBPathMatcher} for the provided pattern.
      *
-     * @param syntaxAndPattern
-     * @return
+     * @param syntaxAndPattern The syntax or pattern that should be used to match paths against.
+     * @return {@link SMBPathMatcher}
      */
     @Override
     public PathMatcher getPathMatcher(String syntaxAndPattern) {
-        if (!this.isOpen()) throw new ClosedFileSystemException();
-        return null;
+        return new SMBPathMatcher(syntaxAndPattern);
     }
 
     /**
@@ -211,7 +211,7 @@ public final class SMBFileSystem extends FileSystem {
      *
      * @return {@link SMBFileSystem}'s identifier, which acts as authority and name of the server.
      */
-    final String getName() {
+    String getName() {
         return this.identifier;
     }
 
@@ -220,7 +220,7 @@ public final class SMBFileSystem extends FileSystem {
      *
      * @return FQN of the server represented by the current instance of {@link SMBFileSystem}.
      */
-    final String getFQN() {
+    String getFQN() {
         return SMBFileSystem.SMB_SCHEME + SMBFileSystem.SCHEME_SEPARATOR + this.identifier;
     }
 }
