@@ -44,7 +44,7 @@ public final class SMBDirectoryStream implements DirectoryStream<Path> {
     /**
      * Returns an iterator for content of the directory handled by the current instance of {@link SMBDirectoryStream}.
      *
-     * @return Iterator<Path> containing the content of the directory handled by the current instance of {@link SMBDirectoryStream}
+     * @return Iterator containing the content of the directory handled by the current instance of {@link SMBDirectoryStream}
      */
     @Override
     public Iterator<Path> iterator() {
