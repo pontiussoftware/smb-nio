@@ -26,7 +26,7 @@ public final class SeekableSMBByteChannel implements SeekableByteChannel {
      * @param create_new Flag that indicates, whether file should be created. If it is set to true, operation will fail if file exists!
      * @param truncate Flag that indicates, whether file should be truncated to length 0 when being opened.
      * @param append Flag that indicates, whether data should be appended.
-     * @throws IOException
+     * @throws IOException If something goes wrong when accessing the file.
      */
     SeekableSMBByteChannel(SmbFile file, boolean write, boolean create, boolean create_new, boolean truncate, boolean append) throws IOException {
 
@@ -44,7 +44,7 @@ public final class SeekableSMBByteChannel implements SeekableByteChannel {
             file.setReadWrite();
             this.random = new SmbRandomAccessFile(file, "rw");
             if (truncate) this.random.setLength(0);
-            if (append) this.random.seek(this.random.length()-1);
+            if (append) this.random.seek(this.random.length());
         } else {
             file.setReadOnly();
             this.random = new SmbRandomAccessFile(file, "r");
