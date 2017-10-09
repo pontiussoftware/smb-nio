@@ -12,7 +12,7 @@ import java.util.concurrent.TimeUnit;
 public final class SMBFileAttributeView implements BasicFileAttributeView {
 
     /** {@link SmbFile} reference used by the current instance of {@link SMBFileAttributeView}. */
-    private final SmbFile file;
+    private final SMBPath path;
 
     /**
      * Public default constructor.
@@ -20,16 +20,7 @@ public final class SMBFileAttributeView implements BasicFileAttributeView {
      * @param path {@link SMBPath} for which to create {@link SMBFileAttributeView}.
      */
     public SMBFileAttributeView(SMBPath path) {
-        this(path.getSmbFile());
-    }
-
-    /**
-     * Internal constructor.
-     *
-     * @param file {@link SmbFile} for which to create {@link SMBFileAttributeView}.
-     */
-    SMBFileAttributeView(SmbFile file) {
-        this.file = file;
+        this.path = path;
     }
 
     /**
@@ -50,12 +41,13 @@ public final class SMBFileAttributeView implements BasicFileAttributeView {
      */
     @Override
     public BasicFileAttributes readAttributes() throws IOException {
-        return new SMBFileAttributes(this.file);
+        return new SMBFileAttributes(this.path.getSmbFile());
     }
 
     @Override
     public void setTimes(FileTime lastModifiedTime, FileTime lastAccessTime, FileTime createTime) throws IOException {
-        this.file.setLastModified(lastModifiedTime.to(TimeUnit.MILLISECONDS));
-        this.file.setCreateTime(createTime.to(TimeUnit.MILLISECONDS));
+        final SmbFile file = this.path.getSmbFile();
+        file.setLastModified(lastModifiedTime.to(TimeUnit.MILLISECONDS));
+        file.setCreateTime(createTime.to(TimeUnit.MILLISECONDS));
     }
 }

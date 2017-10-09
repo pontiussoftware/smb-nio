@@ -307,7 +307,7 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
     @SuppressWarnings("unchecked")
     public <V extends FileAttributeView> V getFileAttributeView(Path path, Class<V> type, LinkOption... options) {
         if (type == BasicFileAttributeView.class || type == SMBFileAttributeView.class) {
-            return (V)(new SMBFileAttributeView(SMBPath.fromPath(path).getSmbFile()));
+            return (V)(new SMBFileAttributeView(SMBPath.fromPath(path)));
         } else {
             return null;
         }
