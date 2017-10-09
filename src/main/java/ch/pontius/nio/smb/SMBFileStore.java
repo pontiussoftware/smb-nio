@@ -59,7 +59,7 @@ public final class SMBFileStore extends FileStore {
      * Returns false because generally, {@link SMBFileStore}'s are not considered to be read-only. However,
      * the concrete access permissions are specific to a file or resource.
      *
-     * @return
+     * @return false
      */
     @Override
     public boolean isReadOnly() {

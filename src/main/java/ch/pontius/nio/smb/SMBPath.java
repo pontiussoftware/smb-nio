@@ -92,7 +92,7 @@ public final class SMBPath implements Path {
     /**
      * Returns the root component of this {@link SMBPath} or null, if the path is relative.
      *
-     * @return Root component of this {@link SMBPath
+     * @return Root component of this {@link SMBPath}
      */
     @Override
     public Path getRoot() {
@@ -106,7 +106,7 @@ public final class SMBPath implements Path {
     /**
      * Returns a new, relative {@link SMBPath} instance that just contains the last path component of the current {@link SMBPath}'s path.
      *
-     * @return {@link SMBPath for the file name.
+     * @return {@link SMBPath} for the file name.
      */
     @Override
     public Path getFileName() {

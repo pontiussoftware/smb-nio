@@ -27,8 +27,7 @@ public final class SMBFileAttributes implements BasicFileAttributes {
      * Public default constructor for {@link SMBFileAttributes}.
      *
      * @param path {@link SMBPath} for which to create {@link SMBFileAttributeView}.
-     *
-     * @throws IOException
+     * @throws IOException If something goes wrong while accessing the file.
      */
     public SMBFileAttributes(SMBPath path) throws IOException {
         this(path.getSmbFile());
@@ -38,6 +37,7 @@ public final class SMBFileAttributes implements BasicFileAttributes {
      * Internal constructor for {@link SMBFileAttributes}.
      *
      * @param file {@link SmbFile} for which to create the attributes.
+     * @throws IOException If something goes wrong while accessing the file.
      */
     SMBFileAttributes(SmbFile file) throws IOException {
         this.attributes = file.getAttributes();
