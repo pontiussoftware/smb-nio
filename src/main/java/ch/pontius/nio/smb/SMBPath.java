@@ -236,7 +236,7 @@ public final class SMBPath implements Path {
                 normalized.add(component);
             }
         }
-        String path = SMBPathUtil.mergePath((String[])normalized.toArray(), 0, this.components.length, this.absolute, this.folder);
+        String path = SMBPathUtil.mergePath(normalized.toArray(new String[normalized.size()]), 0, this.components.length, this.absolute, this.folder);
         return new SMBPath(this.fileSystem, path);
     }
 
