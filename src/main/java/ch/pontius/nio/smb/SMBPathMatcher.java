@@ -30,16 +30,11 @@ public class SMBPathMatcher implements PathMatcher {
      */
     private static String globToRegex(String globPattern) {
         globPattern = globPattern.trim();
-        int strLen = globPattern.length();
-        StringBuilder sb = new StringBuilder(strLen);
-        if (globPattern.startsWith("*")) {
-            globPattern = globPattern.substring(1);
-            strLen--;
-        }
         if (globPattern.endsWith("*")) {
-            globPattern = globPattern.substring(0, strLen-1);
-            strLen--;
+            globPattern = globPattern.substring(0, globPattern.length()-1);
         }
+        StringBuilder sb = new StringBuilder(globPattern.length());
+
         boolean escaping = false;
         int inCurlies = 0;
         for (char currentChar : globPattern.toCharArray()) {
