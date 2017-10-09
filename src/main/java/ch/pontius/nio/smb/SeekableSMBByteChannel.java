@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.FileAlreadyExistsException;
 
 public final class SeekableSMBByteChannel implements SeekableByteChannel {
     /** Internal {@link SmbRandomAccessFile} reference to write to {@link SmbFile}. */
@@ -20,14 +21,29 @@ public final class SeekableSMBByteChannel implements SeekableByteChannel {
      * Constructor for {@link SeekableSMBByteChannel}
      *
      * @param file The {@link SmbFile} instance that should be opened.
-     * @param write Flag that indicates, whether write access was requested.
+     * @param write Flag that indicates, whether write access is requested.
+     * @param create Flag that indicates, whether file should be created.
+     * @param create_new Flag that indicates, whether file should be created. If it is set to true, operation will fail if file exists!
+     * @param truncate Flag that indicates, whether file should be truncated to length 0 when being opened.
      * @param append Flag that indicates, whether data should be appended.
      * @throws IOException
      */
-    SeekableSMBByteChannel(SmbFile file, boolean write, boolean append) throws IOException {
+    SeekableSMBByteChannel(SmbFile file, boolean write, boolean create, boolean create_new, boolean truncate, boolean append) throws IOException {
+
+        /*  Tries to create a new file, if so specified. */
+        if (create || create_new) {
+            if (file.exists()) {
+                if (create_new) throw new FileAlreadyExistsException("The specified file '" + file.getPath() + "' does already exist!");
+            } else {
+                file.createNewFile();
+            }
+        }
+
+        /* Opens the file with either read only or write access. */
         if (write) {
             file.setReadWrite();
             this.random = new SmbRandomAccessFile(file, "rw");
+            if (truncate) this.random.setLength(0);
             if (append) this.random.seek(this.random.length()-1);
         } else {
             file.setReadOnly();

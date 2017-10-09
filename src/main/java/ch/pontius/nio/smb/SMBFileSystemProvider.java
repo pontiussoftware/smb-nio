@@ -117,35 +117,28 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
         /* Determines how the SeekableByteChannel should be setup. */
         boolean write = false;
         boolean create = false;
-        boolean check = false;
+        boolean create_new = false;
         boolean append = false;
+        boolean truncate = false;
 
         for (OpenOption option : options) {
             if (option.equals(StandardOpenOption.WRITE)) {
                 write = true;
-            } else if (option.equals(StandardOpenOption.CREATE_NEW)) {
-                create = true;
             } else if (option.equals(StandardOpenOption.CREATE)) {
                 create = true;
-                check = true;
+            } else if (option.equals(StandardOpenOption.CREATE_NEW)) {
+                create_new = true;
             } else if (option.equals(StandardOpenOption.APPEND)) {
                 append = true;
-            } else if (option.equals(StandardOpenOption.DSYNC) || option.equals(StandardOpenOption.SYNC) || option.equals(StandardOpenOption.SPARSE)) {
-                throw new UnsupportedOperationException("SMBFileSystemProvider does not support the option options SYNC, DSYNC or SPARSE");
-            }
-        }
-
-        /* Tries to create a new file, if so specified. */
-        if (create) {
-            if (file.exists()) {
-                if (check) throw new FileAlreadyExistsException("The specified file '" + smbPath.toString() + "' does already exist!");
-            } else {
-                file.createNewFile();
+            } else if (option.equals(StandardOpenOption.TRUNCATE_EXISTING)) {
+                truncate = true;
+            } else if (option.equals(StandardOpenOption.DSYNC) || option.equals(StandardOpenOption.SYNC) || option.equals(StandardOpenOption.SPARSE) || option.equals(StandardOpenOption.DELETE_ON_CLOSE)) {
+                throw new UnsupportedOperationException("SMBFileSystemProvider does not support the option options SYNC, DSYNC, SPARSE or DELETE_ON_CLOSE");
             }
         }
 
         /* Returns a new SeekableSMBByteChannel object. */
-        return new SeekableSMBByteChannel(file, write, append);
+        return new SeekableSMBByteChannel(file, write, create, create_new, truncate, append);
     }
 
     /**
