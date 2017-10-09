@@ -12,17 +12,17 @@ import java.nio.file.*;
 import java.util.*;
 
 public final class SMBPath implements Path {
-    /** */
+    /** Reference to the {@link SMBFileSystem}. */
     private final SMBFileSystem fileSystem;
 
-    /** */
-    private final URI uri;
+    /** A list of path components that make up the current implementation of {@link SMBPath}. */
+    private String[] components;
 
-    /** */
-    private final SmbFile smbFile;
+    /** Flag indicating whether the current instance of {@link SMBPath} is an absolute path. */
+    private final boolean absolute;
 
-    /** An optional path to which the current path is relative to. */
-    private final Optional<String> relativeTo;
+    /** Flag indicating whether the current instance of {@link SMBPath} points to a folder. */
+    private final boolean folder;
 
     /**
      * Convenience method used to check and cast a {@link Path} to an {@link SMBPath} instance.
@@ -40,80 +40,33 @@ public final class SMBPath implements Path {
     }
 
     /**
-     *
-     * @param system
-     * @param file
-     * @return
-     * @throws URISyntaxException
-     */
-    static SMBPath fromFile(SMBFileSystem system, SmbFile file) throws URISyntaxException {
-        final URL url = file.getURL();
-        final URI uri = new URI(url.getProtocol(), url.getAuthority(), url.getPath(), null);
-        return new SMBPath(system, uri);
-    }
-
-    /**
      * Constructor for {@link SMBPath}. Creates a new, absolute path to a SMB resource from the provided URI.
      *
      * @param fileSystem {@link SMBFileSystem} object this {@link SMBPath} is associated with.
-     * @param
+     * @param uri The URI pointing to the desired file or folder on the SMB file system.
      */
     SMBPath(SMBFileSystem fileSystem, URI uri) {
-        if (!uri.getScheme().equals(SMBFileSystemProvider.SMB_SCHEME)) throw new IllegalArgumentException("The provided URI does not point to an SMB resource.");
+        if (!uri.getScheme().equals(SMBFileSystem.SMB_SCHEME)) throw new IllegalArgumentException("The provided URI does not point to an SMB resource.");
 
-        this.uri = uri;
+        this.folder = SMBPathUtil.isFolder(uri.getPath());
+        this.absolute = SMBPathUtil.isAbsolutePath(uri.getPath());
+        this.components = SMBPathUtil.splitPath(uri.getPath());
         this.fileSystem = fileSystem;
-        this.relativeTo = Optional.empty();
 
-        try {
-            this.smbFile = new SmbFile(this.uri.getScheme() + SMBFileSystem.SCHEME_SEPARATOR + this.uri.getAuthority(), this.uri.getPath());
-        } catch (MalformedURLException e) {
-            throw new IllegalArgumentException("The provided URI '" + this.uri + "' seems to be malformed.");
-        }
     }
 
     /**
-     * Constructor for {@link SMBPath}. Creates a new, absolute path to a SMB resource from the provided host and path string.
+     * Constructor for {@link SMBPath}. Constructs a new path to a SMB resource from the provided host and path string.
      *
      * @param fileSystem {@link SMBFileSystem} object this {@link SMBPath} is associated with.
-     * @param authority
-     * @param path
+     * @param path The path. It can either be relative or absolute.
      */
-    private SMBPath(SMBFileSystem fileSystem, String authority, String path) {
+    private SMBPath(SMBFileSystem fileSystem, String path) {
+        /* Make sure that path is absolute. */
+        this.absolute = SMBPathUtil.isAbsolutePath(path);
+        this.folder = SMBPathUtil.isFolder(path);
+        this.components = SMBPathUtil.splitPath(path);
         this.fileSystem = fileSystem;
-        this.relativeTo = Optional.empty();
-
-        try {
-            this.uri = new URI(SMBFileSystemProvider.SMB_SCHEME, authority, path, null, null);
-            this.smbFile = new SmbFile(this.uri.getScheme() + SMBFileSystem.SCHEME_SEPARATOR + this.uri.getAuthority(), this.uri.getPath());
-        } catch (MalformedURLException | URISyntaxException e) {
-            throw new IllegalArgumentException("The provided authority or path seems to be malformed.");
-        }
-    }
-
-    /**
-     *
-     * @param fileSystem
-     * @param authority
-     * @param relativeTo
-     * @param path
-     */
-    private SMBPath(SMBFileSystem fileSystem, String authority, String relativeTo, String path) {
-        /* Append path separator if missing. */
-        if (relativeTo != null && !relativeTo.endsWith(SMBFileSystem.PATH_SEPARATOR)) {
-            relativeTo += SMBFileSystem.PATH_SEPARATOR;
-        }
-
-        this.fileSystem = fileSystem;
-        this.relativeTo = Optional.ofNullable(relativeTo);
-
-        /* Construct. */
-        try {
-            this.uri = new URI(SMBFileSystemProvider.SMB_SCHEME, authority, this.relativeTo.map(s -> s + path).orElse(path), null, null);
-            this.smbFile = new SmbFile(this.uri.getScheme() + SMBFileSystem.SCHEME_SEPARATOR + this.uri.getAuthority(), this.uri.getPath());
-        } catch (MalformedURLException | URISyntaxException e) {
-            throw new IllegalArgumentException("The provided authority or path seems to be malformed.");
-        }
     }
 
     /**
@@ -133,167 +86,390 @@ public final class SMBPath implements Path {
      */
     @Override
     public final boolean isAbsolute() {
-        return !this.relativeTo.isPresent();
+        return this.absolute;
     }
 
+    /**
+     * Returns the root component of this {@link SMBPath} or null, if the path is relative.
+     *
+     * @return Root component of this {@link SMBPath
+     */
     @Override
     public Path getRoot() {
-        return relativeTo.map(s -> new SMBPath(this.fileSystem, this.uri.getAuthority(), s)).orElse(new SMBPath(this.fileSystem, this.uri.getAuthority(), "/"));
-    }
-
-    @Override
-    public Path getFileName() {
-        String[] split = SMBPathUtil.splitPath(this.uri.getPath());
-        String relativeTo = SMBPathUtil.mergePath(split, 0, split.length-2, true, true);
-        return new SMBPath(this.fileSystem, this.uri.getAuthority(), relativeTo, split[split.length-1]);
-    }
-
-    @Override
-    public Path getParent() {
-        String[] split = SMBPathUtil.splitPath(this.uri.getPath());
-        if (split.length > 1) {
-            String reduced = SMBPathUtil.mergePath(split, 0, split.length-2, true, true);
-            return new SMBPath(this.fileSystem, this.uri.getAuthority(), null, reduced);
+        if (this.absolute) {
+            return new SMBPath(this.fileSystem, "/");
         } else {
             return null;
         }
     }
 
+    /**
+     * Returns a new, relative {@link SMBPath} instance that just contains the last path component of the current {@link SMBPath}'s path.
+     *
+     * @return {@link SMBPath for the file name.
+     */
     @Override
-    public int getNameCount() {
-        String[] split = SMBPathUtil.splitPath(this.uri.getPath());
-        return split.length;
+    public Path getFileName() {
+        return new SMBPath(this.fileSystem, this.components[this.components.length-1]);
     }
-
-    @Override
-    public Path getName(int index) {
-        String[] split = SMBPathUtil.splitPath(this.uri.getPath());
-        String reduced = SMBPathUtil.mergePath(split, 0, index, true, true);
-        return new SMBPath(this.fileSystem, this.uri.getAuthority(), null, reduced);
-    }
-
-    @Override
-    public Path subpath(int beginIndex, int endIndex) {
-        throw new UnsupportedOperationException("It is not possible to create a sub path from an SMBPath.");
-    }
-
-    @Override
-    public boolean startsWith(Path other) {
-        return this.startsWith(other.toString());
-    }
-
-    @Override
-    public boolean startsWith(String other) {
-        return this.uri.getPath().startsWith(other);
-    }
-
-    @Override
-    public boolean endsWith(Path other) {
-        return this.endsWith(other.toString());
-    }
-
-    @Override
-    public boolean endsWith(String other) {
-        return this.uri.getPath().endsWith(other);
-    }
-
-    @Override
-    public Path normalize() {
-        return null;
-    }
-
 
     /**
+     * Returns a new {@link SMBPath} that points to the parent of the current {@link SMBPath}. If the current
+     * {@link SMBPath} instance does not have a parent, this method returns null.
      *
-     * @param other
-     * @return
+     * @return Parent {@link SMBPath}.
+     */
+    @Override
+    public Path getParent() {
+        if (this.components.length > 1) {
+            String reduced = SMBPathUtil.mergePath(this.components, 0, this.components.length-1, this.absolute, true);
+            return new SMBPath(this.fileSystem, reduced);
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * Returns the number of path components in the current {@link SMBPath}'s path.
      *
-     * @throws IllegalArgumentException If other path is not an instance of {@link SMBPath}.
+     * @return Number of path components.
+     */
+    @Override
+    public int getNameCount() {
+       return this.components.length;
+    }
+
+    /**
+     * Returns a name element of this {@link SMBPath} as a new {@link SMBPath} object.
+     *
+     * The index parameter is the index of the name element to return. The element that is closest to the root in the directory hierarchy has index 0.
+     * The element that is farthest from the root has index count-1.
+     *
+     * @param index The index of the element
+     * @return The name element.
+     */
+    @Override
+    public Path getName(int index) {
+        if (index < 0 || index >= this.components.length) throw new IllegalArgumentException("The provided index is out of bounds.");
+        String reduced = SMBPathUtil.mergePath(this.components, index, index, false, index == this.components.length - 1 && this.folder);
+        return new SMBPath(this.fileSystem, reduced);
+    }
+
+    /**
+     * Returns a relative Path that is a subsequence of the name elements of this path.
+     *
+     * @param beginIndex The index of the first element, inclusive
+     * @param endIndex The index of the last element, exclusive
+     * @return The resulting subpath.
+     * @throws IllegalArgumentException If beginIndex is negative, or greater than or equal to the number of elements. If endIndex is less than or equal to beginIndex, or larger than the number of elements.
+     */
+    @Override
+    public Path subpath(int beginIndex, int endIndex) {
+        if (beginIndex < 0 || endIndex >= this.components.length) throw new IllegalArgumentException("The provided indices are out of bounds.");
+        if (beginIndex > endIndex) throw new IllegalArgumentException("The beginIndex must be smaller than the endIndex.");
+        String reduced = SMBPathUtil.mergePath(this.components, beginIndex, endIndex, false, endIndex == this.components.length - 1 && this.folder);
+        return new SMBPath(this.fileSystem, reduced);
+    }
+
+    /**
+     * Tests if this path starts with the given path. If the two paths belong to a different {@link FileSystem} then this
+     * method always returns false. Otherwise, a string comparison is performed.
+     *
+     * @param other The given path
+     * @return True if this path starts with the given path; otherwise false
+     */
+    @Override
+    public boolean startsWith(Path other) {
+        return other.getFileSystem() == this.fileSystem && this.startsWith(other.toString());
+    }
+
+    /**
+     * Tests if this path starts with the provided string. The path separators will be taken into account.
+     *
+     * @param other The given path
+     * @return True if this path starts with the given string; otherwise false
+     */
+    @Override
+    public boolean startsWith(String other) {
+        String path = SMBPathUtil.mergePath(this.components, 0, this.components.length, this.absolute, this.folder);
+        return path.startsWith(other);
+    }
+
+    /**
+     * Tests if this path ends with the given path. If the two paths belong to a different {@link FileSystem} then this
+     * method always returns false. Otherwise, a string comparison is performed.
+     *
+     * @param other The given path
+     * @return True if this path starts with the given path; otherwise false
+     */
+    @Override
+    public boolean endsWith(Path other) {
+        return other.getFileSystem() == this.fileSystem && this.endsWith(other.toString());
+    }
+
+    /**
+     * Tests if this path ends with the provided string. The path separators will be taken into account.
+     *
+     * @param other The given path
+     * @return True if this path starts with the given string; otherwise false
+     */
+    @Override
+    public boolean endsWith(String other) {
+        String path = SMBPathUtil.mergePath(this.components, 0, this.components.length, this.absolute, this.folder);
+        return path.endsWith(other);
+    }
+
+    /**
+     * Returns a path that is this path with redundant name elements, like "." or ".." eliminated.
+     *
+     * @return Normalized {@link SMBPath}.
+     */
+    @Override
+    public Path normalize() {
+        final ArrayList<String> normalized = new ArrayList<>();
+        for (String component: this.components) {
+            if (component.equals(".")) {
+                continue;
+            } else if (component.equals("..") && normalized.size() > 0) {
+                normalized.remove(normalized.size()-1);
+            } else if (component.equals("..") && normalized.size() == 0) {
+                continue;
+            } else {
+                normalized.add(component);
+            }
+        }
+        String path = SMBPathUtil.mergePath((String[])normalized.toArray(), 0, this.components.length, this.absolute, this.folder);
+        return new SMBPath(this.fileSystem, path);
+    }
+
+    /**
+     * Resolve the given path against this {@link SMBPath}.
+     *
+     * If the other parameter is an absolute path then this method trivially returns other. If other is an empty path then this method trivially returns this path.
+     *
+     * @param other The path to resolve against this path
+     * @return The resulting {@link SMBPath}
+     *
+     * @throws IllegalArgumentException If other path is not a {@link SMBPath} OR does not belong to the same {@link SMBFileSystem} OR if this path points to a file.
      */
     @Override
     public Path resolve(Path other) {
-        /* Check if other path is actuall an SMBPath. */
-        if (!(other instanceof SMBPath)) throw new IllegalArgumentException("You can only resolve an SMB path against another SMB path.");
+        /* Check if other path is on the same filesystem. */
+        if (!(other instanceof SMBPath))  throw new IllegalArgumentException("You can only resolve an SMB path against another SMB path.");
+        if (((SMBPath)other).fileSystem != this.fileSystem) throw new IllegalArgumentException("You can only resolve an SMB path against another SMB path on the same file system.");
 
         /* Check if current path is a folder (Important!). */
-        if (!this.isFolder())  throw new IllegalArgumentException("The current path appears to be a file. You cannot resolve another path against a file path. Either add a trailing '/' to indicate that this is a folder or use resolveSibling() instead.");
+        if (!this.isFolder()) throw new IllegalArgumentException("The current path appears to be a file. You cannot resolve another path against a file path. Either add a trailing '/' to indicate that this is a folder or use resolveSibling() instead.");
 
         /* If other is absolute, return other else resolve. */
         if (other.isAbsolute()) {
             return other;
         } else {
-            return new SMBPath(this.fileSystem, this.uri.resolve(((SMBPath) other).uri));
+            String[] components = new String[other.getNameCount() + this.getNameCount()];
+            System.arraycopy(this.components, 0, components, 0, this.getNameCount());
+            System.arraycopy(((SMBPath)other).components, 0, components, this.getNameCount(), other.getNameCount());
+            String path = SMBPathUtil.mergePath(components, 0, components.length, this.absolute, ((SMBPath) other).folder);
+            return new SMBPath(this.fileSystem, path);
         }
     }
 
     /**
+     * Resolve the given path string against this {@link SMBPath}.
      *
-     * @param other
-     * @return
+     * If the other parameter is an absolute path then this method trivially returns other. If other is an empty path then this method trivially returns this path.
+     *
+     * @param other The path to resolve against this path
+     * @return The resulting {@link SMBPath}
+     *
+     * @throws IllegalArgumentException If other path is not a {@link SMBPath} OR does not belong to the same {@link SMBFileSystem} OR if this path points to a file.
      */
     @Override
     public Path resolve(String other) {
         /* Check if current path is a folder (Important!). */
-        if (!this.isFolder())  throw new IllegalArgumentException("The current path appears to be a file. You cannot resolve another path against a file path. Either add a trailing '/' to indicate that this is a folder or use resolveSibling() instead.");
+        if (!this.isFolder()) throw new IllegalArgumentException("The current path appears to be a file. You cannot resolve another path against a file path. Either add a trailing '/' to indicate that this is a folder or use resolveSibling() instead.");
 
-        /* Resolve and return new path. */
-        return new SMBPath(this.fileSystem, this.uri.resolve(other));
-    }
-
-    /**
-     *
-     * @param other
-     * @return
-     *
-     * @throws IllegalArgumentException If other path is not an instance of {@link SMBPath}.
-     */
-    @Override
-    public Path resolveSibling(Path other) {
-        if (!(other instanceof SMBPath)) throw new IllegalArgumentException("You can only resolve an SMB path against another SMB path.");
-        if (other.isAbsolute()) {
-            return other;
+        if (SMBPathUtil.isAbsolutePath(other)) {
+            return new SMBPath(this.fileSystem, other);
         } else {
-            return this.getParent().resolve(other);
+            String[] split = SMBPathUtil.splitPath(other);
+            String[] components = new String[split.length + this.components.length];
+            System.arraycopy(this.components, 0, components, 0, this.components.length);
+            System.arraycopy(split, 0, components, this.components.length, split.length);
+            String path = SMBPathUtil.mergePath(components, 0, components.length, this.absolute, SMBPathUtil.isFolder(other));
+            return new SMBPath(this.fileSystem, path);
         }
     }
 
     /**
+     * Resolve the given path against this {@link SMBPath}'s parent.
      *
-     * @param other
-     * @return
+     * If the other parameter is an absolute path then this method trivially returns other. If other is an empty path then this method trivially returns this path.
+     *
+     * @param other The path to resolve against this path
+     * @return The resulting {@link SMBPath}
+     *
+     * @throws IllegalArgumentException If other path is not a {@link SMBPath} OR does not belong to the same {@link SMBFileSystem}.
+     */
+    @Override
+    public Path resolveSibling(Path other) {
+        /* Check if other path is on the same filesystem. */
+        if (!(other instanceof SMBPath))  throw new IllegalArgumentException("You can only resolve an SMB path against another SMB path.");
+        if (((SMBPath)other).fileSystem != this.fileSystem) throw new IllegalArgumentException("You can only resolve an SMB path against another SMB path on the same file system.");
+
+        if (other.isAbsolute()) {
+            return other;
+        } else {
+            String[] components = new String[other.getNameCount() + this.getNameCount() - 1];
+            System.arraycopy(this.components, 0, components, 0, this.components.length-1);
+            System.arraycopy(((SMBPath)other).components, 0, components, this.components.length-1, ((SMBPath) other).components.length);
+            String path = SMBPathUtil.mergePath(components, 0, components.length, this.absolute, ((SMBPath) other).folder);
+            return new SMBPath(this.fileSystem, path);
+        }
+    }
+
+    /**
+     * Resolve the given path string against this {@link SMBPath}.
+     *
+     * If the other parameter is an absolute path then this method trivially returns other. If other is an empty path then this method trivially returns this path.
+     *
+     * @param other The path to resolve against this path
+     * @return The resulting {@link SMBPath}
+     *
+     * @throws IllegalArgumentException If other path is not a {@link SMBPath} OR does not belong to the same {@link SMBFileSystem} OR if this path points to a file.
      */
     @Override
     public Path resolveSibling(String other) {
-        return this.getParent().resolve(other);
+        /* Check if current path is a folder (Important!). */
+        if (!this.isFolder()) throw new IllegalArgumentException("The current path appears to be a file. You cannot resolve another path against a file path. Either add a trailing '/' to indicate that this is a folder or use resolveSibling() instead.");
+
+        if (SMBPathUtil.isAbsolutePath(other)) {
+            return new SMBPath(this.fileSystem, other);
+        } else {
+            String[] split = SMBPathUtil.splitPath(other);
+            String[] components = new String[split.length + this.components.length - 1];
+            System.arraycopy(this.components, 0, components, 0, this.components.length - 1);
+            System.arraycopy(split, 0, components, this.components.length - 1, split.length);
+            String path = SMBPathUtil.mergePath(components, 0, components.length, this.absolute, SMBPathUtil.isFolder(other));
+            return new SMBPath(this.fileSystem, path);
+        }
     }
 
     @Override
     public Path relativize(Path other) {
+        /* TODO. */
         return null;
     }
 
+    /**
+     * Returns a URI to represent this {@link SMBPath}.
+     *
+     * @return The URI representing this path
+     */
     @Override
     public URI toUri() {
-        return this.uri;
+        String path = SMBPathUtil.mergePath(this.components, 0, this.components.length, this.absolute, this.folder);
+        try {
+            return new URI(SMBFileSystem.SMB_SCHEME, this.fileSystem.getIdentifier(), path, null, null);
+        } catch (URISyntaxException e) {
+            throw new IllegalStateException("The current instance of SMBPath '" + this.toString() + "' cannot be transformed to a valid URI.");
+        }
     }
 
     /**
+     * If this {@link SMBPath} is absolute then the method returns this. Otherwise, the given path is resolved against the top-level directory.
      *
-     * @return
+     * @return Absolute {@link SMBPath}
      */
     @Override
     public Path toAbsolutePath() {
-        return new SMBPath(this.fileSystem, this.uri);
+        if (this.isAbsolute()) {
+            return this;
+        } else {
+            return new SMBPath(this.fileSystem, "/").resolve(this);
+        }
+    }
+
+    /**
+     * Returns an iterator over the name elements of this {@link SMBPath}.
+     *
+     * The first element returned by the iterator represents the name element that is closest to the root in the directory hierarchy, the second element is the next closest,
+     * and so on. The last element returned is the name of the file or directory denoted by this path. The root component, if present, is not returned by the iterator.
+     *
+     * @return An iterator over the name elements of this path.
+     */
+    @Override
+    public Iterator<Path> iterator() {
+        return Arrays.stream(this.components).map(s -> (Path)new SMBPath(this.fileSystem, s)).iterator();
+    }
+
+    /**
+     * Compares two abstract paths lexicographically. This method does not access the file system and neither file is required to exist.
+     *
+     * @param other The path compared to this {@link SMBPath}.
+     * @return Zero if the argument is equal to this path, a value less than zero if this path is lexicographically less than the argument, or a value greater than zero if this path is lexicographically greater than the argument
+     */
+    @Override
+    public int compareTo(Path other) {
+        /* Check if other path is on the same filesystem. */
+        if (!(other instanceof SMBPath))  throw new IllegalArgumentException("You can only resolve an SMB path against another SMB path.");
+        if (((SMBPath)other).fileSystem != this.fileSystem) throw new IllegalArgumentException("You can only resolve an SMB path against another SMB path on the same file system.");
+
+        /* */
+        String thisPath = SMBPathUtil.mergePath(this.components, 0, this.components.length, this.absolute, this.folder);
+        String thatPath = SMBPathUtil.mergePath(((SMBPath)other).components, 0, this.components.length, ((SMBPath)other).absolute, ((SMBPath)other).folder);
+        return thisPath.compareTo(thatPath);
+    }
+
+
+    /**
+     * Default toString() method.
+     *
+     * @return String representation of {@link SMBPath}.
+     */
+    public String toString() {
+        return SMBPathUtil.mergePath(this.components, 0, this.components.length, this.absolute, this.folder);
+    }
+
+    /**
+     * Creates a new {@link SmbFile} associated with this {@link SMBPath} and returns it.
+     *
+     * @return {@link SmbFile}
+     */
+    SmbFile getSmbFile() throws IOException {
+        String path = SMBPathUtil.mergePath(this.components, 0, this.components.length, this.absolute, this.folder);
+        return new SmbFile(SMBFileSystem.SMB_SCHEME + SMBFileSystem.SCHEME_SEPARATOR + this.fileSystem.getIdentifier(), path);
+    }
+
+    /**
+     * Tests this path for equality with the given object. If the given object is not a {@link SMBPath}, or is a {@link SMBPath} associated with a
+     * different {@link SMBFileSystem}, then this method returns false.
+     *
+     * @param other The object to which this object is to be compared
+     * @return If, and only if, the given object is a {@link SMBPath} that is identical to this {@link SMBPath}.
+     */
+    public boolean equals(Object other) {
+        if (!(other instanceof SMBPath)) return false;
+        if (((SMBPath)other).fileSystem != this.fileSystem) return false;
+        return Arrays.equals(this.components, ((SMBPath) other).components);
+    }
+
+    /**
+     * Checks whether the current {@link SMBPath} is a folder.
+     *
+     * @return True if current {@link SMBPath} is a folder.
+     */
+    public boolean isFolder() {
+        return this.folder;
+    }
+
+    @Override
+    public File toFile() {
+        throw new UnsupportedOperationException("It is not possible to construct a file from a SMB path.");
     }
 
     @Override
     public Path toRealPath(LinkOption... options) throws IOException {
         throw new UnsupportedOperationException("Symbolic links are currently not supported by SMB paths.");
-    }
-
-    @Override
-    public File toFile() {
-        return new File(this.smbFile.getUncPath());
     }
 
     @Override
@@ -304,51 +480,5 @@ public final class SMBPath implements Path {
     @Override
     public WatchKey register(WatchService watcher, WatchEvent.Kind<?>... events) throws IOException {
         throw new UnsupportedOperationException("FileWatchers are currently not supported by SMB paths.");
-    }
-
-    @Override
-    public Iterator<Path> iterator() {
-        final List<Path> list = new ArrayList<>();
-        final String[] split = SMBPathUtil.splitPath(this.uri.getPath());
-        for (int i = 0; i<split.length;i++) {
-            String path = SMBPathUtil.mergePath(split, 0, i,true,true);
-            list.add(new SMBPath(this.fileSystem, this.uri.getAuthority(), null, path));
-        }
-        return list.iterator();
-    }
-
-
-    @Override
-    public int compareTo(Path other) {
-        return 0;
-    }
-
-
-    /**
-     * Default toString() method.
-     *
-     * @return
-     */
-    public String toString() {
-        return relativeTo.map(s -> this.uri.getPath().replaceFirst(s, "")).orElse(this.uri.getPath());
-    }
-
-    /**
-     * Getter for {@link SmbFile} associated with this {@link SMBPath}
-     *
-     * @return {@link SmbFile}
-     */
-    SmbFile getSmbFile() {
-        return this.smbFile;
-    }
-
-
-    /**
-     * Checks whether the current {@link SMBPath} is a folder.
-     *
-     * @return True if current {@link SMBPath} is a folder.
-     */
-    private boolean isFolder() {
-        return this.uri.getPath().endsWith("/");
     }
 }
