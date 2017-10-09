@@ -102,6 +102,15 @@ public final class SMBFileSystem extends FileSystem {
     }
 
     /**
+     * Getter for the identifier of this {@link SMBFileSystem}.
+     *
+     * @return {@link SMBFileSystem}'s identifier, which acts as authority.
+     */
+    String getIdentifier() {
+        return identifier;
+    }
+
+    /**
      *
      * @param syntaxAndPattern
      * @return
