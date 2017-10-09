@@ -9,6 +9,8 @@ import java.net.URISyntaxException;
 import java.nio.file.*;
 import java.util.*;
 
+
+
 public final class SMBPath implements Path {
     /** Reference to the {@link SMBFileSystem}. */
     private final SMBFileSystem fileSystem;
@@ -418,7 +420,6 @@ public final class SMBPath implements Path {
         return thisPath.compareTo(thatPath);
     }
 
-
     /**
      * Default toString() method.
      *
@@ -436,7 +437,7 @@ public final class SMBPath implements Path {
     SmbFile getSmbFile() throws IOException {
         if (!this.fileSystem.isOpen()) throw new ClosedFileSystemException();
         String path = SMBPathUtil.mergePath(this.components, 0, this.components.length, this.absolute, this.folder);
-        return new SmbFile(this.fileSystem.getFQN() + SMBFileSystem.PATH_SEPARATOR + this.fileSystem.getName(), path);
+        return new SmbFile(this.fileSystem.getFQN() + SMBFileSystem.PATH_SEPARATOR, path);
     }
 
     /**
