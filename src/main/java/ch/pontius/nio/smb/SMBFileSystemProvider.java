@@ -1,5 +1,6 @@
 package ch.pontius.nio.smb;
 
+import jcifs.Config;
 import jcifs.smb.SmbFile;
 
 import java.io.IOException;
@@ -18,7 +19,24 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * This class acts as a service-provider class for SMB/CIFS based file systems. Internally, it uses jCIFS to provide
+ * all the file access functionality.
+ *
+ * @author      Ralph Gasser
+ * @version     1.0
+ * @since       1.0
+ */
 public final class SMBFileSystemProvider extends FileSystemProvider {
+
+    /** Key for the domain property in the env map {@link SMBFileSystemProvider#newFileSystem(URI, Map)}. */
+    private final static String PROPERTY_KEY_DOMAIN = "domain";
+
+    /** Key for the username property in the env map {@link SMBFileSystemProvider#newFileSystem(URI, Map)}. */
+    private final static String PROPERTY_KEY_USERNAME = "username";
+
+    /** Key for the password property in the env map {@link SMBFileSystemProvider#newFileSystem(URI, Map)}. */
+    private final static String PROPERTY_KEY_PASSWORD  = "password";
 
     /** Local cache of {@link SMBFileSystem} instances. */
     final Map<String ,SMBFileSystem> fileSystemCache;
@@ -42,6 +60,17 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
      * Creates a new {@link SMBFileSystem} instance for the provided URI. {@link SMBFileSystem} instances are cached based
      * on the authority part of the URI (i.e. URI's with the same authority share the same {@link SMBFileSystem} instance).
      *
+     * Credentials for connecting with the SMB/CIFS server can be provided in several ways:
+     *
+     * <ol>
+     *      <li>Encode in the URI, e.g. smb://WORKGROUP;admin:1234@192.168.1.10 </li>
+     *      <li>Provide in the env Map. To do so, you have to set the keys 'workgroup', 'username' and 'password'. </li>
+     *      <li>Provide in the jCIFS config. See jCIFS documentation for more information. </li>
+     * </ol>
+     *
+     * The above options will be considered according to precedence. That is, if the credentials are encoded in the URI those provided in
+     * the env map or the jCIFS config will be ignored.
+     *
      * @param uri URI for which to create {@link SMBFileSystem}
      * @param env Map containing configuration parameters.
      * @return Newly created {@link SMBFileSystem} instance
@@ -52,9 +81,54 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
     @Override
     public SMBFileSystem newFileSystem(URI uri, Map<String, ?> env) {
         if (!uri.getScheme().equals(SMBFileSystem.SMB_SCHEME)) throw new IllegalArgumentException("The provided URI is not an SMB URI.");
-        if (this.fileSystemCache.containsKey(uri.getAuthority())) throw new FileSystemAlreadyExistsException("Filesystem for the provided server 'smb://" + uri.getAuthority() + "' does already exist.");
-        SMBFileSystem system = new SMBFileSystem(uri.getAuthority(), this, env);
-        this.fileSystemCache.put(uri.getAuthority(), system);
+
+        /* The authority string. */
+        String authority;
+
+        /* Check if URI encodes credentials. Credentials are used in the following order:
+         */
+        if (uri.getAuthority().contains(SMBFileSystem.CREDENTIALS_SEPARATOR)) {
+            authority = uri.getAuthority();
+        } else {
+            final StringBuilder builder = new StringBuilder();
+            if (env != null && !env.isEmpty()) {
+                if (env.containsKey(PROPERTY_KEY_DOMAIN)) {
+                    builder.append(env.get(PROPERTY_KEY_DOMAIN));
+                    builder.append(";");
+                }
+                if (env.containsKey(PROPERTY_KEY_USERNAME)) {
+                    builder.append(env.get(PROPERTY_KEY_USERNAME));
+                    if (env.containsKey(PROPERTY_KEY_PASSWORD)) {
+                        builder.append(":");
+                        builder.append(env.get(PROPERTY_KEY_PASSWORD));
+                    }
+                }
+            } else {
+
+                if (Config.getProperty("jcifs.smb.client.domain") != null) {
+                    builder.append(Config.getProperty("jcifs.smb.client.domain"));
+                    builder.append(";");
+                }
+                if (Config.getProperty("jcifs.smb.client.username") != null) {
+                    builder.append(Config.getProperty("jcifs.smb.client.username"));
+                    if (Config.getProperty("jcifs.smb.client.password") != null) {
+                        builder.append(":");
+                        builder.append(Config.getProperty("jcifs.smb.client.password"));
+                    }
+                }
+            }
+
+            if (builder.length() > 0) {
+                builder.append(SMBFileSystem.CREDENTIALS_SEPARATOR).append(uri.getAuthority());
+                authority = builder.toString();
+            } else {
+                authority = uri.getAuthority();
+            }
+        }
+
+        if (this.fileSystemCache.containsKey(authority)) throw new FileSystemAlreadyExistsException("Filesystem for the provided server 'smb://" + authority + "' does already exist.");
+        SMBFileSystem system = new SMBFileSystem(this, authority);
+        this.fileSystemCache.put(authority, system);
         return system;
     }
 

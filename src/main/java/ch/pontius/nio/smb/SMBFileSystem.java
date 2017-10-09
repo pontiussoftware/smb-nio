@@ -29,8 +29,11 @@ public final class SMBFileSystem extends FileSystem {
     /** Default separator between path components. */
     static final String PATH_SEPARATOR = "/";
 
-    /** Default separator between scheme and the rest of the path. */
+    /** Default separator between scheme and the rest of the path. The scheme directly preceeds the authority, which denotes the server and the credentials. */
     static final String SCHEME_SEPARATOR = "://";
+
+    /** Default separator between the credentials and the server. Both are part of the authority, that follows directly after the scheme and its separator. */
+    static final String CREDENTIALS_SEPARATOR = "@";
 
     /** URI scheme supported by SMBFileSystemProvider. */
     static final String SMB_SCHEME = "smb";
@@ -50,11 +53,11 @@ public final class SMBFileSystem extends FileSystem {
     /**
      * Constructor for {@link SMBFileSystem}.
      *
-     * @param identifier The identifier of the {@link SMBFileSystem}; usually defaults to the URI's authority part.
      * @param provider The {@link SMBFileSystemProvider} instance associated with this {@link SMBFileSystem}.
+     * @param authority The identifier of the {@link SMBFileSystem}; usually defaults to the URI's authority part.
      */
-    SMBFileSystem(String identifier, SMBFileSystemProvider provider, Map<String,?> env) {
-        this.identifier = identifier;
+    SMBFileSystem(SMBFileSystemProvider provider, String authority) {
+        this.identifier = authority;
         this.provider = provider;
     }
 
