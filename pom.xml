@@ -7,6 +7,11 @@
     <groupId>ch.pontius.nio</groupId>
     <artifactId>smb-nio</artifactId>
     <version>0.1-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <name>NIO SMB</name>
+    <description>This is a Java NIO.2 file system provider that can be used to access CIFS/SMB file systems.</description>
+    <url>https://github.com/pontiussoftware/smb-nio</url>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -37,6 +42,8 @@
     </licenses>
 
     <scm>
+        <connection>scm:git:git://github.com/pontiussoftware/smb-nio.git</connection>
+        <developerConnection>scm:git:ssh://github.com/pontiussoftware/smb-nio.git</developerConnection>
         <url>https://github.com/pontiussoftware/smb-nio</url>
     </scm>
 
