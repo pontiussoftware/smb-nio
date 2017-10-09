@@ -228,15 +228,15 @@ public final class SMBPath implements Path {
         for (String component: this.components) {
             if (component.equals(".")) {
                 continue;
-            } else if (component.equals("..") && normalized.size() > 0) {
+            } else if (component.equals("..") && normalized.size() > 1) {
                 normalized.remove(normalized.size()-1);
-            } else if (component.equals("..") && normalized.size() == 0) {
+            } else if (component.equals("..") && normalized.size() > 0) {
                 continue;
             } else {
                 normalized.add(component);
             }
         }
-        String path = SMBPathUtil.mergePath(normalized.toArray(new String[normalized.size()]), 0, this.components.length, this.absolute, this.folder);
+        String path = SMBPathUtil.mergePath(normalized.toArray(new String[normalized.size()]), 0, normalized.size(), this.absolute, this.folder);
         return new SMBPath(this.fileSystem, path);
     }
 
