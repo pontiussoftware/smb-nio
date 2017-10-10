@@ -6,7 +6,7 @@
 
     <groupId>ch.pontius.nio</groupId>
     <artifactId>smb-nio</artifactId>
-    <version>0.1-RELEASE</version>
+    <version>0.2-RELEASE</version>
     <packaging>jar</packaging>
 
     <name>NIO SMB</name>
@@ -71,7 +71,7 @@
     <build>
         <resources>
             <resource>
-                <directory>resources</directory>
+                <directory>src/main/resources</directory>
             </resource>
         </resources>
 
