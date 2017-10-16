@@ -71,7 +71,7 @@ public final class SMBPathUtil {
             builder.append(SMBFileSystem.PATH_SEPARATOR);
         }
         if (!folder) {
-            return builder.substring(0, builder.length()-1);
+            return builder.substring(0, Math.max(0,builder.length()-1));
         } else {
             return builder.toString();
         }
