@@ -354,10 +354,53 @@ public final class SMBPath implements Path {
         }
     }
 
+    /**
+     * Constructs a relative path between this path and a given path.
+     *
+     * @param other
+     *
+     * @throws IllegalArgumentException If other path is not a {@link SMBPath} OR does not belong to the same {@link SMBFileSystem} OR if this path points to a file.
+     */
     @Override
     public Path relativize(Path other) {
-        /* TODO. */
-        return null;
+        /* Check type. */
+        if (!(other instanceof SMBPath)) throw new IllegalArgumentException("The provided path is not a SMBPath.");
+        SMBPath target = (SMBPath)other;
+
+        /* Check if both paths are of the same type. */
+        if (this.fileSystem != target.fileSystem) throw new IllegalArgumentException("The two paths do not belong to the same filesystem.");
+        if (this.absolute != target.absolute) throw new IllegalArgumentException("The two paths are of a different type (absolute vs. relative).");
+
+        /* Construct the relative path. */
+        boolean common = true;
+        int lastIndex = 0;
+        final List<String> newPath = new ArrayList<>();
+        for (int i=0;i<this.components.length;i++) {
+            if (common) {
+                if (i<target.components.length) {
+                    if (this.components[i].equals(target.components[i])) {
+                        lastIndex++;
+                    } else {
+                        common = false;
+                        newPath.add("..");
+                    }
+                } else {
+                    newPath.add("..");
+                    common = false;
+                }
+            } else {
+                newPath.add("..");
+            }
+        }
+
+        if (lastIndex < target.components.length) {
+            newPath.addAll(Arrays.asList(target.components).subList(lastIndex, target.components.length));
+        }
+
+        /* Create new relative path and return it. */
+        String[] array = new String[newPath.size()];
+        String path = SMBPathUtil.mergePath(newPath.toArray(array), 0, newPath.size(),false, target.folder);
+        return new SMBPath(this.fileSystem, path);
     }
 
     /**
