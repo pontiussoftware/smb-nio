@@ -397,7 +397,7 @@ public final class SMBPath implements Path {
             newPath.addAll(Arrays.asList(target.components).subList(lastIndex, target.components.length));
         }
 
-        /* Create new relative path and return it. */
+        /* Create new relative path. */
         String[] array = new String[newPath.size()];
         String path = SMBPathUtil.mergePath(newPath.toArray(array), 0, newPath.size(),false, target.folder);
         return new SMBPath(this.fileSystem, path);
@@ -442,7 +442,12 @@ public final class SMBPath implements Path {
      */
     @Override
     public Iterator<Path> iterator() {
-        return Arrays.stream(this.components).map(s -> (Path)new SMBPath(this.fileSystem, s)).iterator();
+        final List<Path> elements = new ArrayList<>(this.components.length);
+        for (int i=0;i<this.components.length-1;i++) {
+            elements.add(new SMBPath(this.fileSystem, this.components[i] + SMBFileSystem.PATH_SEPARATOR));
+        }
+        elements.add(new SMBPath(this.fileSystem, this.components[this.components.length-1] + (this.folder ? SMBFileSystem.PATH_SEPARATOR : "")));
+        return elements.iterator();
     }
 
     /**
