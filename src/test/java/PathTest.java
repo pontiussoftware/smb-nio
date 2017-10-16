@@ -17,6 +17,24 @@ public class PathTest {
     private static final String PATH_04 = "smb://test@192.168.1.106/home/rgasser/text.xls";
     private static final String PATH_05 = "smb://test@192.168.1.106/home/rgasser/lala/text.xls";
 
+
+    /**
+     * Test paths for the relativize unit tests.
+     *
+     * IN: Test paths.
+     * OUT: Expected output.
+     */
+    private static final String PATH_REL_IN_01 = "smb://test@192.168.1.106/a/b/c";
+    private static final String PATH_REL_IN_02 = "smb://test@192.168.1.106/a/b/c/d/e/f";
+    private static final String PATH_REL_IN_03 = "smb://test@192.168.1.106/x/y/z";
+
+    private static final String PATH_REL_OUT_01 = "d/e/f";
+    private static final String PATH_REL_OUT_02 = "../../..";
+    private static final String PATH_REL_OUT_03 = "";
+    private static final String PATH_REL_OUT_04 = "../../../x/y/z";
+    private static final String PATH_REL_OUT_05 = "../../../../../../x/y/z";
+    private static final String PATH_REL_OUT_06 = "../../../a/b/c";
+
     /**
      * Tests the definition of the {@link SMBPath}. I.e. whether paths are correctly parsed as
      * absolute / relative and file / folder.
@@ -100,6 +118,35 @@ public class PathTest {
                 () -> assertEquals(path02.toString(), "rgasser"),
                 () -> assertEquals(path01.isAbsolute(), false),
                 () -> assertEquals(path01.isAbsolute(), false)
+        );
+    }
+
+    /**
+     * Tests the SMBPath.relativize() method on absolute paths.
+     *
+     * @throws URISyntaxException If one of the paths is wrong.
+     */
+    @Test
+    public void testRelativizeOnAbsolute() throws URISyntaxException {
+        final SMBFileSystemProvider provider = new SMBFileSystemProvider();
+        final Path path01 = provider.getPath(new URI(PATH_REL_IN_01));
+        final Path path02 = provider.getPath(new URI(PATH_REL_IN_02));
+        final Path path03 = provider.getPath(new URI(PATH_REL_IN_03));
+        assertAll("SMBPath.testRelativizeOnAbsolute()",
+                () -> assertEquals(path01.relativize(path02).toString(), PATH_REL_OUT_01),
+                () -> assertEquals(path02.relativize(path01).toString(), PATH_REL_OUT_02),
+                () -> assertEquals(path02.relativize(path02).toString(), PATH_REL_OUT_03),
+                () -> assertEquals(path01.relativize(path01).toString(), PATH_REL_OUT_03),
+                () -> assertEquals(path01.relativize(path03).toString(), PATH_REL_OUT_04),
+                () -> assertEquals(path02.relativize(path03).toString(), PATH_REL_OUT_05),
+                () -> assertEquals(path03.relativize(path01).toString(), PATH_REL_OUT_06),
+                () -> assertFalse(path01.relativize(path02).isAbsolute()),
+                () -> assertFalse(path02.relativize(path01).isAbsolute()),
+                () -> assertFalse(path02.relativize(path02).isAbsolute()),
+                () -> assertFalse(path01.relativize(path01).isAbsolute()),
+                () -> assertFalse(path01.relativize(path03).isAbsolute()),
+                () -> assertFalse(path02.relativize(path03).isAbsolute()),
+                () -> assertFalse(path03.relativize(path01).isAbsolute())
         );
     }
 }
