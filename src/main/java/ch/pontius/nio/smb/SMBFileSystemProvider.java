@@ -139,7 +139,12 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
     @Override
     public SMBPath getPath(URI uri) {
         if (!uri.getScheme().equals(SMBFileSystem.SMB_SCHEME)) throw new IllegalArgumentException("The provided URI is not an SMB URI.");
-        if (this.fileSystemCache.containsKey(uri.getAuthority())) {
+
+        /* Constructs a canonical authority string, taking all possible ways to provide credentials into consideration. */
+        final String authority = this.constructAuthority(uri, new HashMap<>());
+
+        /* Lookup authority string to determine, whether a new SMBFileSystem is required. */
+        if (this.fileSystemCache.containsKey(authority)) {
             return new SMBPath(this.getFileSystem(uri), uri);
         } else {
             return new SMBPath(this.newFileSystem(uri, new HashMap<>()), uri);
