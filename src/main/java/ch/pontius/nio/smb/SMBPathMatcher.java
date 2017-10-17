@@ -11,7 +11,7 @@ public final class SMBPathMatcher implements PathMatcher {
     /**
      * Default constructor for {@link SMBPathMatcher}.
      *
-     * @param pattern
+     * @param pattern The pattern that should be used. The pattern should start with either a 'regex:' or 'glob:' qualifier. If no qualifier is provided, RegEx is assumed.
      */
     SMBPathMatcher(String pattern) {
         if (pattern.startsWith("glob:")) {
