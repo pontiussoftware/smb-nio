@@ -3,8 +3,9 @@ package ch.pontius.nio.smb;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 
-public class SMBPathMatcher implements PathMatcher {
-    /** */
+public final class SMBPathMatcher implements PathMatcher {
+
+    /** The RegEx pattern used to match the path. It does have a postfix qualifier! */
     private final String pattern;
 
     /**
