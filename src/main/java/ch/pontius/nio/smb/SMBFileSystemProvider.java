@@ -1,5 +1,9 @@
 package ch.pontius.nio.smb;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import jcifs.Config;
 import jcifs.smb.SmbFile;
 
@@ -24,7 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * all the file access functionality.
  *
  * @author      Ralph Gasser
- * @version     1.0
+ * @version     1.0.1
  * @since       1.0
  */
 public final class SMBFileSystemProvider extends FileSystemProvider {
@@ -46,8 +50,6 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
 
     /** Key for the password property in the env map {@link SMBFileSystemProvider#constructAuthority(URI, Map)}. */
     private final static String PROPERTY_KEY_JCIFS_PASSWORD  = "jcifs.smb.client.password";
-
-
 
     /** Local cache of {@link SMBFileSystem} instances. */
     final Map<String ,SMBFileSystem> fileSystemCache;
@@ -94,13 +96,17 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
         if (!uri.getScheme().equals(SMBFileSystem.SMB_SCHEME)) throw new IllegalArgumentException("The provided URI is not an SMB URI.");
 
         /* Constructs a canonical authority string, taking all possible ways to provide credentials into consideration. */
-        final String authority = this.constructAuthority(uri, env);
+        try {
+            final String authority = this.constructAuthority(uri, env);
 
-        /* Tries to create a new SMBFileSystem. */
-        if (this.fileSystemCache.containsKey(authority)) throw new FileSystemAlreadyExistsException("Filesystem for the provided server 'smb://" + authority + "' does already exist.");
-        SMBFileSystem system = new SMBFileSystem(this, authority);
-        this.fileSystemCache.put(authority, system);
-        return system;
+            /* Tries to create a new SMBFileSystem. */
+            if (this.fileSystemCache.containsKey(authority)) throw new FileSystemAlreadyExistsException("Filesystem for the provided server 'smb://" + authority + "' does already exist.");
+            SMBFileSystem system = new SMBFileSystem(this, authority);
+            this.fileSystemCache.put(authority, system);
+            return system;
+        } catch (UnsupportedEncodingException e) {
+            throw new IllegalArgumentException("Failed to URL encode the username and/or password in provided URI.", e);
+        }
     }
 
     /**
@@ -118,13 +124,17 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
         if (!uri.getScheme().equals(SMBFileSystem.SMB_SCHEME)) throw new IllegalArgumentException("The provided URI is not an SMB URI.");
 
         /* Constructs a canonical authority string, taking all possible ways to provide credentials into consideration. */
-        final String authority = this.constructAuthority(uri, new HashMap<>());
+        try {
+            final String authority = this.constructAuthority(uri, new HashMap<>());
 
-        /* Tries to fetch an existing SMBFileSystem. */
-        if (this.fileSystemCache.containsKey(authority)) {
-            return this.fileSystemCache.get(authority);
-        } else {
-            throw new FileSystemNotFoundException("No filesystem for the provided server 'smb://" + uri.getAuthority() + "' could be found.");
+            /* Tries to fetch an existing SMBFileSystem. */
+            if (this.fileSystemCache.containsKey(authority)) {
+                return this.fileSystemCache.get(authority);
+            } else {
+                throw new FileSystemNotFoundException("No filesystem for the provided server 'smb://" + uri.getAuthority() + "' could be found.");
+            }
+        } catch (UnsupportedEncodingException e) {
+            throw new IllegalArgumentException("Failed to URL encode the username and/or password in provided URI.", e);
         }
     }
 
@@ -141,13 +151,17 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
         if (!uri.getScheme().equals(SMBFileSystem.SMB_SCHEME)) throw new IllegalArgumentException("The provided URI is not an SMB URI.");
 
         /* Constructs a canonical authority string, taking all possible ways to provide credentials into consideration. */
-        final String authority = this.constructAuthority(uri, new HashMap<>());
+        try {
+            final String authority = this.constructAuthority(uri, new HashMap<>());
 
-        /* Lookup authority string to determine, whether a new SMBFileSystem is required. */
-        if (this.fileSystemCache.containsKey(authority)) {
-            return new SMBPath(this.getFileSystem(uri), uri);
-        } else {
-            return new SMBPath(this.newFileSystem(uri, new HashMap<>()), uri);
+            /* Lookup authority string to determine, whether a new SMBFileSystem is required. */
+            if (this.fileSystemCache.containsKey(authority)) {
+                return new SMBPath(this.getFileSystem(uri), uri);
+            } else {
+                return new SMBPath(this.newFileSystem(uri, new HashMap<>()), uri);
+            }
+        } catch (UnsupportedEncodingException e) {
+            throw new IllegalArgumentException("Failed to URL encode the username and/or password in provided URI.", e);
         }
     }
 
@@ -413,12 +427,11 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
      * @param env The env map. Can be empty.
      * @return A canonical authority string.
      */
-    private String constructAuthority(URI uri, Map<String, ?> env) {
+    private String constructAuthority(URI uri, Map<String, ?> env) throws UnsupportedEncodingException {
         /* The authority string. */
         String authority;
 
-        /* Check if URI encodes credentials. Credentials are used in the following order:
-         */
+        /* Check if URI encodes credentials. Credentials are used in the following order: */
         if (uri.getAuthority().contains(SMBFileSystem.CREDENTIALS_SEPARATOR)) {
             authority = uri.getAuthority();
         } else {
@@ -429,23 +442,22 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
                     builder.append(";");
                 }
                 if (env.containsKey(PROPERTY_KEY_USERNAME)) {
-                    builder.append(env.get(PROPERTY_KEY_USERNAME));
+                    builder.append(URLEncoder.encode(env.get(PROPERTY_KEY_USERNAME).toString(), "UTF-8"));
                     if (env.containsKey(PROPERTY_KEY_PASSWORD)) {
                         builder.append(":");
-                        builder.append(env.get(PROPERTY_KEY_PASSWORD));
+                        builder.append(URLEncoder.encode(env.get(PROPERTY_KEY_PASSWORD).toString(), "UTF-8"));
                     }
                 }
             } else {
-
                 if (Config.getProperty(PROPERTY_KEY_JCIFS_DOMAIN) != null) {
                     builder.append(Config.getProperty(PROPERTY_KEY_JCIFS_DOMAIN));
                     builder.append(";");
                 }
                 if (Config.getProperty(PROPERTY_KEY_JCIFS_USERNAME) != null) {
-                    builder.append(Config.getProperty(PROPERTY_KEY_JCIFS_USERNAME));
+                    builder.append(URLEncoder.encode(Config.get(PROPERTY_KEY_JCIFS_USERNAME).toString(), "UTF-8"));
                     if (Config.getProperty(PROPERTY_KEY_JCIFS_PASSWORD) != null) {
                         builder.append(":");
-                        builder.append(Config.getProperty(PROPERTY_KEY_JCIFS_PASSWORD));
+                        builder.append(URLEncoder.encode(Config.get(PROPERTY_KEY_JCIFS_PASSWORD).toString(), "UTF-8"));
                     }
                 }
             }
