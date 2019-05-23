@@ -155,7 +155,7 @@ public final class SeekableSMBByteChannel implements SeekableByteChannel {
      */
     @Override
     public synchronized void close() throws IOException {
-        if (!this.open) throw new ClosedChannelException();
+        if (!this.open) return;
         this.open = false;
         this.random.close();
     }
