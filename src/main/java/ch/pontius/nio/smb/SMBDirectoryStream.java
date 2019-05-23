@@ -1,6 +1,8 @@
 package ch.pontius.nio.smb;
 
 
+import jcifs.smb.SmbFile;
+
 import java.io.IOException;
 
 import java.nio.file.DirectoryStream;
@@ -33,8 +35,8 @@ public final class SMBDirectoryStream implements DirectoryStream<Path> {
     public SMBDirectoryStream(SMBPath smbPath, java.nio.file.DirectoryStream.Filter<? super Path> filter) throws IOException {
         if (!smbPath.getSmbFile().isDirectory()) throw new NotDirectoryException("The provided path '" + smbPath.toString() + "' is not a directory.");
         this.content = new ArrayList<>();
-        for (String name : smbPath.getSmbFile().list()) {
-            final Path path = smbPath.resolve(name);
+        for (SmbFile name : smbPath.getSmbFile().listFiles()) {
+            final Path path = smbPath.resolve(name.getName());
             if (filter == null || filter.accept(path)) {
                 this.content.add(path);
             }
