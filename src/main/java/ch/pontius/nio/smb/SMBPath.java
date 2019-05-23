@@ -357,7 +357,7 @@ public final class SMBPath implements Path {
     /**
      * Constructs a relative path between this path and a given path.
      *
-     * @param other
+     * @param other The other path.
      *
      * @throws IllegalArgumentException If other path is not a {@link SMBPath} OR does not belong to the same {@link SMBFileSystem} OR if this path points to a file.
      */

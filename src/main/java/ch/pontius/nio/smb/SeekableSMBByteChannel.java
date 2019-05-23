@@ -41,12 +41,10 @@ public final class SeekableSMBByteChannel implements SeekableByteChannel {
 
         /* Opens the file with either read only or write access. */
         if (write) {
-            file.setReadWrite();
             this.random = new SmbRandomAccessFile(file, "rw");
             if (truncate) this.random.setLength(0);
             if (append) this.random.seek(this.random.length());
         } else {
-            file.setReadOnly();
             this.random = new SmbRandomAccessFile(file, "r");
         }
     }
@@ -157,7 +155,7 @@ public final class SeekableSMBByteChannel implements SeekableByteChannel {
      */
     @Override
     public synchronized void close() throws IOException {
-        if (!this.open) throw new ClosedChannelException();
+        if (!this.open) return;
         this.open = false;
         this.random.close();
     }
