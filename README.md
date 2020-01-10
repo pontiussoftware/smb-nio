@@ -1,4 +1,4 @@
-# SMB NIO Nex Generation
+# SMB NIO Next Generation
 This is a Java NIO.2 file system provider that can be used to access CIFS/SMB file systems. CIFS is the standard file sharing protocol on the Microsoft Windows platform (e.g. to map a network drive). 
 
 The library uses [jcifs-ng](https://github.com/AgNO3/jcifs-ng) internally which is an Open Source client library that implements the CIFS/SMB networking protocol in 100% Java.
