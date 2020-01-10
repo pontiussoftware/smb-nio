@@ -1,25 +1,30 @@
-# SMB NIO.2
+# SMB NIO Nex Generation
 This is a Java NIO.2 file system provider that can be used to access CIFS/SMB file systems. CIFS is the standard file sharing protocol on the Microsoft Windows platform (e.g. to map a network drive). 
 
-This library uses [jCIFS](https://jcifs.samba.org/) internally, which is an Open Source client library that implements the CIFS/SMB networking protocol in 100% Java. 
+The library uses [jcifs-ng](https://github.com/AgNO3/jcifs-ng) internally which is an Open Source client library that implements the CIFS/SMB networking protocol in 100% Java.
 
-# Dependencies
-This library requires the [jCIFS](https://jcifs.samba.org/) library as a dependency.
+This project is a fork of [smb-nio](https://github.com/pontiussoftware/smb-nio) which uses ``jcifs-ng`` instead of ``jcifs`` to support SMB version 2, because 
+version 1 has serious security issues.
 
 # How to use
-The easiest way to use the library is to add it as a Maven dependency to your project. Just add the following entry to your pom.xml file.
+There currently no releases so you have to build the library yourself at the moment. This is how to build it using maven:
 
-```xml
-<dependencies>
-  <dependency>
-    <groupId>ch.pontius.nio</groupId>
-    <artifactId>smb-nio</artifactId>
-    <version>0.6-RELEASE</version>
-  </dependency>
-</dependencies>
+```bash
+mvn install
 ```
 
-Once you have added the dependency, you should be able to create SMBPath objects by using the Paths#get(URI) method of the Java NIO.2 library. The URI must specify the 'smb://' scheme.
+After building and installing the library to your local maven repository you can include it to your maven project as a dependency:
+
+```xml
+<dependency>
+    <groupId>de.picturesafe.file</groupId>
+    <artifactId>smb-nio-ng</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+</dependency>
+```
+
+Once you have added the dependency you should be able to create SMBPath objects by using the Paths#get(URI) method of the ``smb-nio-ng`` library. 
+The URI must specify the ``smb://`` scheme.
 
 # Issues
 Please report issues using the GitHub issue tracker.
