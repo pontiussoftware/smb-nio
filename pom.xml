@@ -32,7 +32,7 @@
             <id>jfrommann</id>
             <name>Jörg Frommann</name>
             <email>jfrommann@picturesafe.de</email>
-            <organization>picturesafe Media/Data/Bank GmbH</organization>
+            <organization>picturesafe media/data/bank GmbH</organization>
             <organizationUrl>https://www.picturesafe.de</organizationUrl>
             <roles>
                 <role>Development of smb-nio-ng</role>
