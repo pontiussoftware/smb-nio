@@ -4,23 +4,18 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>ch.pontius.nio</groupId>
-    <artifactId>smb-nio</artifactId>
-    <version>0.6-RELEASE</version>
+    <groupId>de.picturesafe.file</groupId>
+    <artifactId>smb-nio-ng</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>NIO SMB</name>
+    <name>SMB NIO Next Generation</name>
     <description>This is a Java NIO.2 file system provider that can be used to access CIFS/SMB file systems.</description>
-    <url>https://github.com/pontiussoftware/smb-nio</url>
+    <url>https://github.com/jfrommann/smb-nio-ng</url>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
-
-    <organization>
-        <name>pontius software GmbH</name>
-        <url>https://www.pontius.ch</url>
-    </organization>
 
     <developers>
         <developer>
@@ -29,9 +24,21 @@
             <email>rg@pontius.ch</email>
             <organization>pontius software GmbH</organization>
             <organizationUrl>https://www.pontius.ch</organizationUrl>
+            <roles>
+                <role>Desing and development of smb-nio which built the base for smb-nio-ng</role>
+            </roles>
+        </developer>
+        <developer>
+            <id>jfrommann</id>
+            <name>Jörg Frommann</name>
+            <email>jfrommann@picturesafe.de</email>
+            <organization>picturesafe Media/Data/Bank GmbH</organization>
+            <organizationUrl>https://www.picturesafe.de</organizationUrl>
+            <roles>
+                <role>Development of smb-nio-ng</role>
+            </roles>
         </developer>
     </developers>
-
 
     <licenses>
         <license>
@@ -42,16 +49,16 @@
     </licenses>
 
     <scm>
-        <connection>scm:git:git://github.com/pontiussoftware/smb-nio.git</connection>
-        <developerConnection>scm:git:ssh://github.com/pontiussoftware/smb-nio.git</developerConnection>
-        <url>https://github.com/pontiussoftware/smb-nio</url>
+        <connection>scm:git:git://github.com/jfrommann/smb-nio-ng.git</connection>
+        <developerConnection>scm:git:ssh://github.com/jfrommann/smb-nio-ng.git</developerConnection>
+        <url>https://github.com/jfrommann/smb-nio-ng</url>
     </scm>
 
     <dependencies>
         <dependency>
-            <groupId>jcifs</groupId>
-            <artifactId>jcifs</artifactId>
-            <version>1.3.17</version>
+            <groupId>eu.agno3.jcifs</groupId>
+            <artifactId>jcifs-ng</artifactId>
+            <version>2.1.3</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
@@ -61,12 +68,12 @@
         </dependency>
     </dependencies>
 
-    <distributionManagement>
+    <!--<distributionManagement>
         <snapshotRepository>
             <id>ossrh</id>
             <url>https://oss.sonatype.org/content/repositories/snapshots</url>
         </snapshotRepository>
-    </distributionManagement>
+    </distributionManagement>-->
 
     <build>
         <resources>
@@ -92,7 +99,7 @@
                     <archive>
                         <index>true</index>
                         <manifestEntries>
-                            <Specification-Title>NIO SMB</Specification-Title>
+                            <Specification-Title>SMB NIO Next Generation</Specification-Title>
                             <Specification-Version>${project.version}</Specification-Version>
                             <Specification-Vendor>${project.organization.name}</Specification-Vendor>
                         </manifestEntries>
@@ -127,7 +134,7 @@
                 </executions>
             </plugin>
 
-            <plugin>
+            <!--<plugin>
                 <groupId>org.sonatype.plugins</groupId>
                 <artifactId>nexus-staging-maven-plugin</artifactId>
                 <version>1.6.7</version>
@@ -137,9 +144,9 @@
                     <nexusUrl>https://oss.sonatype.org/</nexusUrl>
                     <autoReleaseAfterClose>true</autoReleaseAfterClose>
                 </configuration>
-            </plugin>
+            </plugin>-->
 
-            <plugin>
+            <!--<plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-gpg-plugin</artifactId>
                 <version>1.6</version>
@@ -152,13 +159,13 @@
                         </goals>
                         <configuration>
                             <gpgArguments>
-                                <arg>--pinentry-mode</arg>
+                                <arg>&#45;&#45;pinentry-mode</arg>
                                 <arg>loopback</arg>
                             </gpgArguments>
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>
+            </plugin>-->
         </plugins>
     </build>
 </project>

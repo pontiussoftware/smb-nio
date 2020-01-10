@@ -1,23 +1,30 @@
 package ch.pontius.nio.smb;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import jcifs.Config;
 import jcifs.smb.SmbFile;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
-
+import java.net.URLEncoder;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.file.*;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.AccessMode;
+import java.nio.file.CopyOption;
+import java.nio.file.DirectoryStream;
+import java.nio.file.FileStore;
+import java.nio.file.FileSystemAlreadyExistsException;
+import java.nio.file.FileSystemNotFoundException;
+import java.nio.file.LinkOption;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.NotDirectoryException;
+import java.nio.file.OpenOption;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileAttributeView;
 import java.nio.file.spi.FileSystemProvider;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -448,7 +455,7 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
                         builder.append(URLEncoder.encode(env.get(PROPERTY_KEY_PASSWORD).toString(), "UTF-8"));
                     }
                 }
-            } else {
+            } /*else { // ToDo; Port to jcifs-ng
                 if (Config.getProperty(PROPERTY_KEY_JCIFS_DOMAIN) != null) {
                     builder.append(Config.getProperty(PROPERTY_KEY_JCIFS_DOMAIN));
                     builder.append(";");
@@ -460,7 +467,7 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
                         builder.append(URLEncoder.encode(Config.get(PROPERTY_KEY_JCIFS_PASSWORD).toString(), "UTF-8"));
                     }
                 }
-            }
+            }*/
 
             if (builder.length() > 0) {
                 builder.append(SMBFileSystem.CREDENTIALS_SEPARATOR).append(uri.getAuthority());
