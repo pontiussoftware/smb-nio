@@ -7,7 +7,7 @@ This project is a fork of [smb-nio](https://github.com/pontiussoftware/smb-nio) 
 version 1 has serious security issues.
 
 # How to use
-There currently no releases so you have to build the library yourself at the moment. This is how to build it using maven:
+There are currently no releases so you have to build the library yourself at the moment. This is how to build it using maven:
 
 ```bash
 mvn install
