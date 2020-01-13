@@ -1,5 +1,7 @@
 package ch.pontius.nio.smb;
 
+import ch.pontius.nio.smb.watch.SMBPoller;
+import ch.pontius.nio.smb.watch.SMBWatchService;
 import jcifs.smb.SmbFile;
 
 import java.io.IOException;
@@ -35,7 +37,6 @@ import java.util.concurrent.ConcurrentHashMap;
  * all the file access functionality.
  *
  * @author      Ralph Gasser
- * @version     1.0.1
  * @since       1.0
  */
 public final class SMBFileSystemProvider extends FileSystemProvider {
@@ -61,9 +62,20 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
     /** Local cache of {@link SMBFileSystem} instances. */
     final Map<String ,SMBFileSystem> fileSystemCache;
 
+    private SMBPoller smbPoller;
+
     /** Default constructor for {@link SMBFileSystemProvider}. */
     public SMBFileSystemProvider() {
         this.fileSystemCache = new ConcurrentHashMap<>();
+    }
+
+    /**
+     * Constrcutor
+     * @param smbPoller Optional {@link SMBPoller} to create {@link SMBWatchService} from
+     */
+    public SMBFileSystemProvider(SMBPoller smbPoller) {
+        this();
+        this.smbPoller = smbPoller;
     }
 
     /**
@@ -108,7 +120,7 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
 
             /* Tries to create a new SMBFileSystem. */
             if (this.fileSystemCache.containsKey(authority)) throw new FileSystemAlreadyExistsException("Filesystem for the provided server 'smb://" + authority + "' does already exist.");
-            SMBFileSystem system = new SMBFileSystem(this, authority);
+            SMBFileSystem system = new SMBFileSystem(this, authority, smbPoller);
             this.fileSystemCache.put(authority, system);
             return system;
         } catch (UnsupportedEncodingException e) {

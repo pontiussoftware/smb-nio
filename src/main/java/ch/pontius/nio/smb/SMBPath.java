@@ -1,5 +1,7 @@
 package ch.pontius.nio.smb;
 
+import ch.pontius.nio.smb.watch.SMBWatchService;
+import com.sun.nio.file.ExtendedWatchEventModifier;
 import jcifs.smb.SmbFile;
 
 import java.io.File;
@@ -521,12 +523,16 @@ public final class SMBPath implements Path {
     }
 
     @Override
-    public WatchKey register(WatchService watcher, WatchEvent.Kind<?>[] events, WatchEvent.Modifier... modifiers) throws IOException {
-        throw new UnsupportedOperationException("FileWatchers are currently not supported by SMB paths.");
+    public WatchKey register(WatchService watcher, WatchEvent.Kind<?>[] kinds, WatchEvent.Modifier... modifiers) throws IOException {
+        if (watcher instanceof SMBWatchService) {
+            return ((SMBWatchService) watcher).register(this, kinds, modifiers);
+        } else {
+            throw new IOException("Unsupported type of WatchService: " + watcher);
+        }
     }
 
     @Override
-    public WatchKey register(WatchService watcher, WatchEvent.Kind<?>... events) throws IOException {
-        throw new UnsupportedOperationException("FileWatchers are currently not supported by SMB paths.");
+    public WatchKey register(WatchService watcher, WatchEvent.Kind<?>... kinds) throws IOException {
+        return register(watcher, kinds, ExtendedWatchEventModifier.FILE_TREE);
     }
 }
