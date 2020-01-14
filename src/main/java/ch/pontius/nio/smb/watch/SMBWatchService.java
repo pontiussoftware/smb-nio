@@ -10,13 +10,12 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Code ported from sun.nio.fs.AbstractWatchService
  *
  * @author Jörg Frommann
  */
 public class SMBWatchService implements WatchService {
 
-    private static final WatchKey CLOSE_KEY = new SMBWatchKey(null, null) {
+    private static final WatchKey CLOSE_KEY = new SMBWatchKey(null, null, null) {
         public boolean isValid() {
             return true;
         }
@@ -33,7 +32,7 @@ public class SMBWatchService implements WatchService {
 
     public SMBWatchService(SMBPoller poller) {
         this.poller = poller;
-        poller.start();
+        poller.start(this);
     }
 
     public WatchKey register(Path path, WatchEvent.Kind<?>[] kinds, WatchEvent.Modifier... modifiers) throws IOException {
@@ -84,10 +83,6 @@ public class SMBWatchService implements WatchService {
         final WatchKey key = pendingKeys.take();
         checkKey(key);
         return key;
-    }
-
-    public final boolean isOpen() {
-        return !closed;
     }
 
     @Override

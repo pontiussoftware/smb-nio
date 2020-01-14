@@ -1,5 +1,10 @@
 package ch.pontius.nio.smb.watch;
 
+import org.apache.commons.collections4.BidiMap;
+import org.apache.commons.collections4.bidimap.DualHashBidiMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.nio.file.ClosedWatchServiceException;
 import java.nio.file.Path;
@@ -13,11 +18,12 @@ import java.util.LinkedList;
 import java.util.Set;
 
 /**
- * Code ported from sun.nio.fs.AbstractPoller
  *
  * @author Jörg Frommann
  */
 public abstract class AbstractSMBPoller implements SMBPoller {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractSMBPoller.class);
 
     private enum RequestType {
         REGISTER,
@@ -25,13 +31,24 @@ public abstract class AbstractSMBPoller implements SMBPoller {
         CLOSE
     }
 
-    private final LinkedList<AbstractSMBPoller.Request> requestList = new LinkedList<>();
-    private boolean shutdown = false;
+    private final LinkedList<AbstractSMBPoller.Request> requests = new LinkedList<>();
+    private final long pollIntervalMillis;
 
-    public void start() {
+    private SMBWatchService watcher;
+    private boolean shutdown;
+
+    protected final BidiMap<Path, SMBWatchKey> registry = new DualHashBidiMap<>();
+
+    public AbstractSMBPoller(long pollIntervalMillis) {
+        this.pollIntervalMillis = pollIntervalMillis;
+    }
+
+    public void start(SMBWatchService watcher) {
+        this.watcher = watcher;
+
         AccessController.doPrivileged(new PrivilegedAction<Object>() {
             public Object run() {
-                final Thread thread = new Thread(() -> poll());
+                final Thread thread = new Thread(() -> process());
                 thread.setDaemon(true);
                 thread.start();
                 return null;
@@ -39,13 +56,30 @@ public abstract class AbstractSMBPoller implements SMBPoller {
         });
     }
 
-    protected abstract void wakeup() throws IOException;
+    private void process() {
+        while(true) {
+            try {
+                final boolean shouldStop = processRequests();
+                if (shouldStop) {
+                    break;
+                }
+            } catch (Exception e) {
+                LOGGER.error("Failed to process requests", e);
+            }
 
-    protected abstract Object doRegister(Path path, Set<? extends WatchEvent.Kind<?>> kinds, WatchEvent.Modifier... modifiers);
+            try {
+                poll();
+            } catch (Exception e) {
+                LOGGER.error("Poll failed", e);
+            }
 
-    protected abstract void doCancel(WatchKey key);
-
-    protected abstract void doClose();
+            try {
+                Thread.sleep(pollIntervalMillis);
+            } catch (InterruptedException e) {
+                // ignored
+            }
+        }
+    }
 
     protected abstract void poll();
 
@@ -79,6 +113,13 @@ public abstract class AbstractSMBPoller implements SMBPoller {
         }
     }
 
+    private SMBWatchKey doRegister(Path path, Set<? extends WatchEvent.Kind<?>> kinds, WatchEvent.Modifier... modifiers) {
+        final SMBWatchKey key = new SMBWatchKey(path, watcher, kinds);
+        // Modifiers are dismissed at the moment.
+        registry.put(path, key);
+        return key;
+    }
+
     public void cancel(SMBWatchKey key) {
         try {
             invoke(AbstractSMBPoller.RequestType.CANCEL, key);
@@ -87,21 +128,31 @@ public abstract class AbstractSMBPoller implements SMBPoller {
         }
     }
 
+    protected void doCancel(SMBWatchKey key) {
+        if (key.isValid()) {
+            registry.removeValue(key);
+        }
+    }
+
     @Override
     public void close() throws IOException {
         invoke(AbstractSMBPoller.RequestType.CLOSE);
     }
 
+    protected void doClose() {
+        registry.clear();
+        requests.clear();
+    }
+
     private Object invoke(AbstractSMBPoller.RequestType type, Object... params) throws IOException {
         final AbstractSMBPoller.Request request = new AbstractSMBPoller.Request(type, params);
-        synchronized(requestList) {
+        synchronized(requests) {
             if (shutdown) {
                 throw new ClosedWatchServiceException();
             }
 
-            requestList.add(request);
+            requests.add(request);
         }
-        wakeup();
 
         final Object result = request.awaitResult();
         if (result instanceof RuntimeException) {
@@ -115,8 +166,8 @@ public abstract class AbstractSMBPoller implements SMBPoller {
 
     protected boolean processRequests() {
         AbstractSMBPoller.Request request;
-        synchronized(this.requestList) {
-            while((request = requestList.poll()) != null) {
+        synchronized(this.requests) {
+            while((request = requests.poll()) != null) {
                 if (shutdown) {
                     request.release(new ClosedWatchServiceException());
                 }
@@ -132,7 +183,7 @@ public abstract class AbstractSMBPoller implements SMBPoller {
                         break;
                     case CANCEL:
                         params = request.parameters();
-                        final WatchKey key = (WatchKey) params[0];
+                        final SMBWatchKey key = (SMBWatchKey) params[0];
                         doCancel(key);
                         request.release(null);
                         break;
@@ -147,7 +198,7 @@ public abstract class AbstractSMBPoller implements SMBPoller {
             }
         }
 
-        return this.shutdown;
+        return shutdown;
     }
 
     private static class Request {

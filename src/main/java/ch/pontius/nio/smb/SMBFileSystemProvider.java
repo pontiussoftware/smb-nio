@@ -62,20 +62,9 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
     /** Local cache of {@link SMBFileSystem} instances. */
     final Map<String ,SMBFileSystem> fileSystemCache;
 
-    private SMBPoller smbPoller;
-
     /** Default constructor for {@link SMBFileSystemProvider}. */
     public SMBFileSystemProvider() {
         this.fileSystemCache = new ConcurrentHashMap<>();
-    }
-
-    /**
-     * Constrcutor
-     * @param smbPoller Optional {@link SMBPoller} to create {@link SMBWatchService} from
-     */
-    public SMBFileSystemProvider(SMBPoller smbPoller) {
-        this();
-        this.smbPoller = smbPoller;
     }
 
     /**
@@ -112,6 +101,33 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
      */
     @Override
     public SMBFileSystem newFileSystem(URI uri, Map<String, ?> env) {
+        return newFileSystem(uri, env, null);
+    }
+
+    /**
+     * Creates a new {@link SMBFileSystem} instance for the provided URI. {@link SMBFileSystem} instances are cached based
+     * on the authority part of the URI (i.e. URI's with the same authority share the same {@link SMBFileSystem} instance).
+     *
+     * Credentials for connecting with the SMB/CIFS server can be provided in several ways:
+     *
+     * <ol>
+     *      <li>Encode in the URI, e.g. smb://WORKGROUP;admin:1234@192.168.1.10 </li>
+     *      <li>Provide in the env Map. To do so, you have to set the keys 'workgroup', 'username' and 'password'. </li>
+     *      <li>Provide in the jCIFS config. See jCIFS documentation for more information. </li>
+     * </ol>
+     *
+     * The above options will be considered according to precedence. That is, if the credentials are encoded in the URI those provided in
+     * the env map or the jCIFS config will be ignored.
+     *
+     * @param uri URI for which to create {@link SMBFileSystem}
+     * @param env Map containing configuration parameters.
+     * @param smbPoller {@link SMBPoller} to create {@link SMBWatchService} from
+     * @return Newly created {@link SMBFileSystem} instance
+     *
+     * @throws FileSystemAlreadyExistsException If an instance of {@link SMBFileSystem} already exists for provided URI.
+     * @throws IllegalArgumentException If provided URI is not an SMB URI.
+     */
+    public SMBFileSystem newFileSystem(URI uri, Map<String, ?> env, SMBPoller smbPoller) {
         if (!uri.getScheme().equals(SMBFileSystem.SMB_SCHEME)) throw new IllegalArgumentException("The provided URI is not an SMB URI.");
 
         /* Constructs a canonical authority string, taking all possible ways to provide credentials into consideration. */
