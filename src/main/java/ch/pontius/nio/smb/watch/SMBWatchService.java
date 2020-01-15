@@ -1,5 +1,8 @@
 package ch.pontius.nio.smb.watch;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.nio.file.ClosedWatchServiceException;
 import java.nio.file.Path;
@@ -14,6 +17,8 @@ import java.util.concurrent.TimeUnit;
  * @author Jörg Frommann
  */
 public class SMBWatchService implements WatchService {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(SMBWatchService.class);
 
     private static final WatchKey CLOSE_KEY = new SMBWatchKey(null, null, null) {
         public boolean isValid() {
@@ -63,6 +68,7 @@ public class SMBWatchService implements WatchService {
 
     @Override
     public final WatchKey poll() {
+        LOGGER.debug("Poll: {} pendig keys", pendingKeys.size());
         checkOpen();
         final WatchKey key = pendingKeys.poll();
         checkKey(key);
@@ -71,6 +77,7 @@ public class SMBWatchService implements WatchService {
 
     @Override
     public final WatchKey poll(long timeout, TimeUnit unit) throws InterruptedException {
+        LOGGER.debug("Poll: {} pendig keys", pendingKeys.size());
         checkOpen();
         final WatchKey key = pendingKeys.poll(timeout, unit);
         checkKey(key);
@@ -79,6 +86,7 @@ public class SMBWatchService implements WatchService {
 
     @Override
     public final WatchKey take() throws InterruptedException {
+        LOGGER.debug("Take: {} pendig keys", pendingKeys.size());
         checkOpen();
         final WatchKey key = pendingKeys.take();
         checkKey(key);

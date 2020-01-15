@@ -2,7 +2,9 @@ package ch.pontius.nio.smb;
 
 import ch.pontius.nio.smb.watch.SMBPoller;
 import ch.pontius.nio.smb.watch.SMBWatchService;
+import ch.pontius.nio.smb.watch.StandardSMBPoller;
 import jcifs.smb.SmbFile;
+import org.apache.commons.collections4.MapUtils;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -42,22 +44,28 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class SMBFileSystemProvider extends FileSystemProvider {
 
     /** Key for the domain property in the env map {@link SMBFileSystemProvider#constructAuthority(URI, Map)}. */
-    private final static String PROPERTY_KEY_DOMAIN = "domain";
+    public static final String PROPERTY_KEY_DOMAIN = "domain";
 
     /** Key for the username property in the env map {@link SMBFileSystemProvider#constructAuthority(URI, Map)}. */
-    private final static String PROPERTY_KEY_USERNAME = "username";
+    public static final String PROPERTY_KEY_USERNAME = "username";
 
     /** Key for the password property in the env map {@link SMBFileSystemProvider#constructAuthority(URI, Map)}. */
-    private final static String PROPERTY_KEY_PASSWORD  = "password";
+    public static final String PROPERTY_KEY_PASSWORD  = "password";
 
     /** Key for the password property in the env map {@link SMBFileSystemProvider#constructAuthority(URI, Map)}. */
-    private final static String PROPERTY_KEY_JCIFS_DOMAIN  = "jcifs.smb.client.domain";
+    public static final String PROPERTY_KEY_JCIFS_DOMAIN  = "jcifs.smb.client.domain";
 
     /** Key for the password property in the env map {@link SMBFileSystemProvider#constructAuthority(URI, Map)}. */
-    private final static String PROPERTY_KEY_JCIFS_USERNAME  = "jcifs.smb.client.username";
+    public static final String PROPERTY_KEY_JCIFS_USERNAME  = "jcifs.smb.client.username";
 
     /** Key for the password property in the env map {@link SMBFileSystemProvider#constructAuthority(URI, Map)}. */
-    private final static String PROPERTY_KEY_JCIFS_PASSWORD  = "jcifs.smb.client.password";
+    public static final String PROPERTY_KEY_JCIFS_PASSWORD  = "jcifs.smb.client.password";
+
+    /** Key to enable a smb watchservice */
+    public static final String PROPERTY_KEY_WATCHSERVICE_ENABLED  = "watchservice.enabled";
+
+    /** Key for the smb watchservice poll interval in milliseconds */
+    public static final String PROPERTY_KEY_WATCHSERVICE_POLL_INTERVALL  = "watchservice.pollInterval";
 
     /** Local cache of {@link SMBFileSystem} instances. */
     final Map<String ,SMBFileSystem> fileSystemCache;
@@ -101,7 +109,14 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
      */
     @Override
     public SMBFileSystem newFileSystem(URI uri, Map<String, ?> env) {
-        return newFileSystem(uri, env, null);
+        SMBPoller smbPoller = null;
+        if (MapUtils.isNotEmpty(env)) {
+            if (MapUtils.getBooleanValue(env, PROPERTY_KEY_WATCHSERVICE_ENABLED, false)) {
+                Long pollInterval = MapUtils.getLong(env, PROPERTY_KEY_WATCHSERVICE_POLL_INTERVALL);
+                smbPoller = (pollInterval != null) ? new StandardSMBPoller(pollInterval) : new StandardSMBPoller();
+            }
+        }
+        return newFileSystem(uri, env, smbPoller);
     }
 
     /**
