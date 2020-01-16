@@ -461,12 +461,12 @@ public final class SMBPath implements Path {
     @Override
     public int compareTo(Path other) {
         /* Check if other path is on the same filesystem. */
-        if (!(other instanceof SMBPath))  throw new IllegalArgumentException("You can only resolve an SMB path against another SMB path.");
-        if (((SMBPath)other).fileSystem != this.fileSystem) throw new IllegalArgumentException("You can only resolve an SMB path against another SMB path on the same file system.");
+        if (!(other instanceof SMBPath))  throw new IllegalArgumentException("You can only compare an SMB path against another SMB path.");
+        if (((SMBPath)other).fileSystem != this.fileSystem) throw new IllegalArgumentException("You can only compare an SMB path against another SMB path on the same file system.");
 
-        /* */
-        String thisPath = SMBPathUtil.mergePath(this.components, 0, this.components.length, this.absolute, this.folder);
-        String thatPath = SMBPathUtil.mergePath(((SMBPath)other).components, 0, this.components.length, ((SMBPath)other).absolute, ((SMBPath)other).folder);
+        final String thisPath = SMBPathUtil.mergePath(this.components, 0, this.components.length, this.absolute, this.folder);
+        final String[] otherComponents = ((SMBPath)other).components;
+        final String thatPath = SMBPathUtil.mergePath(otherComponents, 0, otherComponents.length, other.isAbsolute(), ((SMBPath)other).folder);
         return thisPath.compareTo(thatPath);
     }
 
