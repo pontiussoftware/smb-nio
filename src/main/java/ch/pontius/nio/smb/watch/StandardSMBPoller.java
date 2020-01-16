@@ -47,8 +47,6 @@ public class StandardSMBPoller extends AbstractSMBPoller {
                     final FileTime lastModifiedTime = attributeView.readAttributes().lastModifiedTime();
 
                     if (lastModifiedTime.compareTo(lastModified.computeIfAbsent(path, p -> lastModifiedTime)) > 0) {
-                        signalEvent(key, StandardWatchEventKinds.ENTRY_MODIFY, path);
-
                         if (Files.isDirectory(path)) {
                             final Set<Path> dirContent = knownDirContent.computeIfAbsent(path, p -> new HashSet<>());
                             Files.list(path).forEach(sub -> {
@@ -57,10 +55,14 @@ public class StandardSMBPoller extends AbstractSMBPoller {
                                     dirContent.add(sub);
                                 }
                             });
+                        } else {
+                            signalEvent(key, StandardWatchEventKinds.ENTRY_MODIFY, path);
                         }
                     }
+                    lastModified.put(path, lastModifiedTime);
                 } else {
                     signalEvent(key, StandardWatchEventKinds.ENTRY_DELETE, path);
+                    lastModified.remove(path);
                     knownDirContent.remove(path);
                 }
             } catch (IOException e) {
