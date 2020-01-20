@@ -73,6 +73,7 @@ public class StandardSMBPoller extends AbstractSMBPoller {
 
     private void signalEvent(SMBWatchKey key, WatchEvent.Kind<?> kind, Path path) {
         if (key.kinds().contains(kind)) {
+            LOGGER.debug("Signal event: {} - {}", kind, path);
             key.signalEvent(kind, path);
         }
     }

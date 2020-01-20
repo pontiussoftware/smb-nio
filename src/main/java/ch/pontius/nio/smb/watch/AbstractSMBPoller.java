@@ -57,10 +57,13 @@ public abstract class AbstractSMBPoller implements SMBPoller {
     }
 
     private void process() {
+        LOGGER.info("SMB poller started: poll interval = {} ms", pollIntervalMillis);
+
         while(true) {
             try {
                 final boolean shouldStop = processRequests();
                 if (shouldStop) {
+                    LOGGER.debug("SMB poller stop requested");
                     break;
                 }
             } catch (Exception e) {
@@ -79,6 +82,7 @@ public abstract class AbstractSMBPoller implements SMBPoller {
                 // ignored
             }
         }
+        LOGGER.info("SMB poller stopped");
     }
 
     protected abstract void poll();
@@ -114,6 +118,7 @@ public abstract class AbstractSMBPoller implements SMBPoller {
     }
 
     private SMBWatchKey doRegister(Path path, Set<? extends WatchEvent.Kind<?>> kinds, WatchEvent.Modifier... modifiers) {
+        LOGGER.debug("Register: {} - {}", path, kinds);
         final SMBWatchKey key = new SMBWatchKey(path, watcher, kinds);
         // Modifiers are dismissed at the moment.
         registry.put(path, key);
@@ -130,6 +135,7 @@ public abstract class AbstractSMBPoller implements SMBPoller {
 
     protected void doCancel(SMBWatchKey key) {
         if (key.isValid()) {
+            LOGGER.debug("Cancel: {} - {}", key.path, key.kinds);
             registry.removeValue(key);
         }
     }
@@ -142,6 +148,7 @@ public abstract class AbstractSMBPoller implements SMBPoller {
     protected void doClose() {
         registry.clear();
         requests.clear();
+        LOGGER.info("SMB poller closed");
     }
 
     private Object invoke(AbstractSMBPoller.RequestType type, Object... params) throws IOException {

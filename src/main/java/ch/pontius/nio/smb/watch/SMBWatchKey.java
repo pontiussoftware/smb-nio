@@ -1,8 +1,6 @@
 package ch.pontius.nio.smb.watch;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.nio.file.StandardWatchEventKinds;
@@ -21,8 +19,6 @@ import java.util.Set;
  */
 public class SMBWatchKey implements WatchKey {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SMBWatchKey.class);
-
     private enum State {
         READY,
         SIGNALLED
@@ -31,9 +27,9 @@ public class SMBWatchKey implements WatchKey {
     static final int MAX_EVENT_LIST_SIZE = 512;
     static final SMBWatchKey.Event<Object> OVERFLOW_EVENT;
 
-    private final Path path;
-    private final SMBWatchService watcher;
-    private final Set<? extends WatchEvent.Kind<?>> kinds;
+    final Path path;
+    final SMBWatchService watcher;
+    final Set<? extends WatchEvent.Kind<?>> kinds;
 
     private SMBWatchKey.State state;
     private List<WatchEvent<?>> events;
@@ -100,7 +96,6 @@ public class SMBWatchKey implements WatchKey {
     }
 
     public void signalEvent(WatchEvent.Kind<?> kind, Path path) {
-        LOGGER.debug("Signal: {} - {}", kind, path);
         boolean modify = kind == StandardWatchEventKinds.ENTRY_MODIFY;
 
         synchronized(this) {
