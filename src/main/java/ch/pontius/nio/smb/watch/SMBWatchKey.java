@@ -211,5 +211,14 @@ public class SMBWatchKey implements WatchKey {
         public void increment() {
             ++count;
         }
+
+        @Override
+        public String toString() {
+            return new ToStringBuilder(this) //--
+                    .append("kind", kind) //--
+                    .append("context", context) //--
+                    .append("count", count) //--
+                    .toString();
+        }
     }
 }

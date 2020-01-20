@@ -71,12 +71,25 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
     /** Key prefix for jcifs properties */
     private static final String JCIFS_PROPERTY_KEY_PREFIX  = "jcifs.";
 
+    private static SMBFileSystemProvider DEFAULT;
+
     /** Local cache of {@link SMBFileSystem} instances. */
     final Map<String ,SMBFileSystem> fileSystemCache;
 
     /** Default constructor for {@link SMBFileSystemProvider}. */
     public SMBFileSystemProvider() {
         this.fileSystemCache = new ConcurrentHashMap<>();
+    }
+
+    /**
+     * Gets the default instance of the SMBFileSystemProvider
+     * @return Default instance
+     */
+    public static synchronized SMBFileSystemProvider getDefault() {
+        if (DEFAULT == null) {
+            DEFAULT = new SMBFileSystemProvider();
+        }
+        return DEFAULT;
     }
 
     /**
@@ -170,6 +183,32 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
     }
 
     /**
+     * Retrieves a {@link SMBFileSystem} instance for the provided URI from fileSystemCache or creates a new one if it is missing.
+     * {@link SMBFileSystem} instances are cached based on the authority part of the URI (i.e. URI's with the same authority share the same
+     * {@link SMBFileSystem} instance).
+     *
+     * @param uri URI for which to fetch {@link SMBFileSystem}
+     * @param env Map containing configuration parameters.
+     * @return {@link SMBFileSystem} instance
+     *
+     * @throws FileSystemNotFoundException If no instance of {@link SMBFileSystem} could be retrieved from fileSystemCache.
+     * @throws IllegalArgumentException If provided URI is not an SMB URI.
+     */
+    public SMBFileSystem getOrCreateFileSystem(URI uri, Map<String, ?> env) {
+        if (!uri.getScheme().equals(SMBFileSystem.SMB_SCHEME)) throw new IllegalArgumentException("The provided URI is not an SMB URI.");
+
+        try {
+            final CIFSContext context = createContext(env);
+            final String authority = constructAuthority(uri, env, context);
+            return fileSystemCache.containsKey(authority) ? fileSystemCache.get(authority) : newFileSystem(uri, env);
+        } catch (UnsupportedEncodingException e) {
+            throw new IllegalArgumentException("Failed to URL encode the username and/or password in provided URI.", e);
+        } catch (CIFSException e) {
+            throw new IllegalArgumentException("Failed to create the CIFS context by the provided configuration parameters.", e);
+        }
+    }
+
+    /**
      * Creates a {@link CIFSContext}.
      * @param env Map containing configuration parameters
      * @return {@link CIFSContext}
@@ -227,7 +266,7 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
             if (this.fileSystemCache.containsKey(authority)) {
                 return this.fileSystemCache.get(authority);
             } else {
-                throw new FileSystemNotFoundException("No filesystem for the provided server 'smb://" + uri.getAuthority() + "' could be found.");
+                throw new FileSystemNotFoundException("No filesystem for the provided server 'smb://" + authority + "' could be found.");
             }
         } catch (UnsupportedEncodingException e) {
             throw new IllegalArgumentException("Failed to URL encode the username and/or password in provided URI.", e);
