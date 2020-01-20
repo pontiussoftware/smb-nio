@@ -1,6 +1,8 @@
 package ch.pontius.nio.smb.watch;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 
 import java.nio.file.Path;
 import java.nio.file.StandardWatchEventKinds;
@@ -171,6 +173,15 @@ public class SMBWatchKey implements WatchKey {
     @Override
     public int hashCode() {
         return path.hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this, ToStringStyle.SHORT_PREFIX_STYLE) //--
+                .append("path", path) //--
+                .append("kinds", kinds) //--
+                .append("state", state) //--
+                .toString();
     }
 
     private static class Event<T> implements WatchEvent<T> {

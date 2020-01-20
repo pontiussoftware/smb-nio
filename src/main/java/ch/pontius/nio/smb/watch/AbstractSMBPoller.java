@@ -117,7 +117,7 @@ public abstract class AbstractSMBPoller implements SMBPoller {
         }
     }
 
-    private SMBWatchKey doRegister(Path path, Set<? extends WatchEvent.Kind<?>> kinds, WatchEvent.Modifier... modifiers) {
+    protected SMBWatchKey doRegister(Path path, Set<? extends WatchEvent.Kind<?>> kinds, WatchEvent.Modifier... modifiers) {
         LOGGER.debug("Register: {} - {}", path, kinds);
         final SMBWatchKey key = new SMBWatchKey(path, watcher, kinds);
         // Modifiers are dismissed at the moment.

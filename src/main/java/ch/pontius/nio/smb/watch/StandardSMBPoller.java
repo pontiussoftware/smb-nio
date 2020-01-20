@@ -36,6 +36,25 @@ public class StandardSMBPoller extends AbstractSMBPoller {
     }
 
     @Override
+    protected SMBWatchKey doRegister(Path path, Set<? extends WatchEvent.Kind<?>> kinds, WatchEvent.Modifier... modifiers) {
+        final SMBWatchKey key = super.doRegister(path, kinds, modifiers);
+        registerPathAttributes(path);
+        return key;
+    }
+
+    private void registerPathAttributes(Path path) {
+        try {
+            lastModified.put(path, lastModifiedTime(path));
+            if (Files.isDirectory(path)) {
+                final Set<Path> dirContent = knownDirContent.computeIfAbsent(path, p -> new HashSet<>());
+                Files.list(path).forEach(dirContent::add);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to register attributes of path: " + path, e);
+        }
+    }
+
+    @Override
     protected void poll() {
         for (final Map.Entry<Path, SMBWatchKey> entry : registry.entrySet()) {
             final Path path = entry.getKey();
@@ -43,10 +62,7 @@ public class StandardSMBPoller extends AbstractSMBPoller {
 
             try {
                 if (Files.exists(path)) {
-                    final SMBFileAttributeView  attributeView = Files.getFileAttributeView(path, SMBFileAttributeView.class);
-                    final FileTime lastModifiedTime = attributeView.readAttributes().lastModifiedTime();
-
-                    if (lastModifiedTime.compareTo(lastModified.computeIfAbsent(path, p -> lastModifiedTime)) > 0) {
+                    if (isModified(path)) {
                         if (Files.isDirectory(path)) {
                             final Set<Path> dirContent = knownDirContent.computeIfAbsent(path, p -> new HashSet<>());
                             Files.list(path).forEach(sub -> {
@@ -59,21 +75,36 @@ public class StandardSMBPoller extends AbstractSMBPoller {
                             signalEvent(key, StandardWatchEventKinds.ENTRY_MODIFY, path);
                         }
                     }
-                    lastModified.put(path, lastModifiedTime);
                 } else {
                     signalEvent(key, StandardWatchEventKinds.ENTRY_DELETE, path);
                     lastModified.remove(path);
                     knownDirContent.remove(path);
                 }
-            } catch (IOException e) {
+            } catch (Exception e) {
                 LOGGER.error("Failed to process path: {}", path, e);
             }
         }
     }
 
+    private boolean isModified(Path path) {
+        final FileTime lastModifiedTime = lastModifiedTime(path);
+        final boolean modified = lastModifiedTime.compareTo(lastModified.get(path)) > 0;
+        lastModified.put(path, lastModifiedTime);
+        return modified;
+    }
+
+    private FileTime lastModifiedTime(Path path) {
+        try {
+            final SMBFileAttributeView  attributeView = Files.getFileAttributeView(path, SMBFileAttributeView.class);
+            return attributeView.readAttributes().lastModifiedTime();
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to determine modification time of path: " + path, e);
+        }
+    }
+
     private void signalEvent(SMBWatchKey key, WatchEvent.Kind<?> kind, Path path) {
         if (key.kinds().contains(kind)) {
-            LOGGER.debug("Signal event: {} - {}", kind, path);
+            LOGGER.debug("Signal event: {} - {} - {}", key, kind, path);
             key.signalEvent(kind, path);
         }
     }

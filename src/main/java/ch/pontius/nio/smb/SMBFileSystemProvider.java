@@ -434,7 +434,7 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
         SmbFile smbFile = SMBPath.fromPath(path).getSmbFile();
 
         /* First check if file exists. */
-        if (!smbFile.exists()) throw new NoSuchFileException("The specified SMB resource does not exist.");
+        if (!smbFile.exists()) throw new NoSuchFileException("The specified SMB resource does not exist: " + path);
 
         /* Determin which attributes to check. */
         boolean checkRead = false;
@@ -445,8 +445,8 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
         }
 
         /* Perform necessary checks. */
-        if (checkRead && !smbFile.canRead())  throw new AccessDeniedException("The specified SMB resource is not readable.");
-        if (checkWrite && !smbFile.canWrite())  throw new AccessDeniedException("The specified SMB resource is not writable.");
+        if (checkRead && !smbFile.canRead())  throw new AccessDeniedException("The specified SMB resource is not readable: " + path);
+        if (checkWrite && !smbFile.canWrite())  throw new AccessDeniedException("The specified SMB resource is not writable: " + path);
     }
 
     /**
