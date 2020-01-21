@@ -208,6 +208,13 @@ public abstract class AbstractSMBPoller implements SMBPoller {
         return shutdown;
     }
 
+    protected void signalEvent(SMBWatchKey key, WatchEvent.Kind<?> kind, Path path) {
+        if (key.kinds().contains(kind)) {
+            LOGGER.debug("Signal event: {} - {} - {}", key, kind, path);
+            key.signalEvent(kind, path);
+        }
+    }
+
     private static class Request {
 
         private final AbstractSMBPoller.RequestType type;
