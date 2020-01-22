@@ -19,7 +19,7 @@ After building and installing the library to your local maven repository you can
 <dependency>
     <groupId>com.github.jfrommann</groupId>
     <artifactId>smb-nio-ng</artifactId>
-    <version>0.2.0-SNAPSHOT</version>
+    <version>0.2.0</version>
 </dependency>
 ```
 
