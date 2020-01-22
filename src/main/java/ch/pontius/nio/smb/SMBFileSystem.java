@@ -1,7 +1,7 @@
 package ch.pontius.nio.smb;
 
-import ch.pontius.nio.smb.watch.SMBPoller;
-import ch.pontius.nio.smb.watch.SMBWatchService;
+import ch.pontius.nio.smb.watch.SmbPoller;
+import ch.pontius.nio.smb.watch.SmbWatchService;
 import jcifs.CIFSContext;
 import jcifs.smb.SmbException;
 import jcifs.smb.SmbFile;
@@ -59,8 +59,8 @@ public final class SMBFileSystem extends FileSystem {
 
     private final CIFSContext context;
 
-    /** Optional {@link SMBPoller} to create {@link SMBWatchService} from */
-    private SMBPoller smbPoller;
+    /** Optional {@link SmbPoller} to create {@link SmbWatchService} from */
+    private SmbPoller smbPoller;
 
     /**
      * Constructor for {@link SMBFileSystem}.
@@ -79,9 +79,9 @@ public final class SMBFileSystem extends FileSystem {
      *
      * @param provider The {@link SMBFileSystemProvider} instance associated with this {@link SMBFileSystem}.
      * @param authority The identifier of the {@link SMBFileSystem}; usually defaults to the URI's authority part.
-     * @param smbPoller Optional {@link SMBPoller} to create {@link SMBWatchService} from.
+     * @param smbPoller Optional {@link SmbPoller} to create {@link SmbWatchService} from.
      */
-    SMBFileSystem(SMBFileSystemProvider provider, String authority, CIFSContext context, SMBPoller smbPoller) {
+    SMBFileSystem(SMBFileSystemProvider provider, String authority, CIFSContext context, SmbPoller smbPoller) {
         this(provider, authority, context);
         this.smbPoller = smbPoller;
     }
@@ -238,7 +238,7 @@ public final class SMBFileSystem extends FileSystem {
     @Override
     public WatchService newWatchService() throws IOException {
         if (smbPoller != null) {
-            return new SMBWatchService(smbPoller);
+            return new SmbWatchService(smbPoller);
         } else {
             throw new IOException("No SMBPoller instance registered, WatchService is not supported.");
         }

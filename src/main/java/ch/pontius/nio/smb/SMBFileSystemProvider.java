@@ -1,8 +1,8 @@
 package ch.pontius.nio.smb;
 
-import ch.pontius.nio.smb.watch.SMBPoller;
-import ch.pontius.nio.smb.watch.SMBWatchService;
-import ch.pontius.nio.smb.watch.StandardSMBPoller;
+import ch.pontius.nio.smb.watch.SmbPoller;
+import ch.pontius.nio.smb.watch.SmbWatchService;
+import ch.pontius.nio.smb.watch.StandardSmbPoller;
 import jcifs.CIFSContext;
 import jcifs.CIFSException;
 import jcifs.Configuration;
@@ -126,11 +126,11 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
      */
     @Override
     public SMBFileSystem newFileSystem(URI uri, Map<String, ?> env) {
-        SMBPoller smbPoller = null;
+        SmbPoller smbPoller = null;
         if (MapUtils.isNotEmpty(env)) {
             if (MapUtils.getBooleanValue(env, PROPERTY_KEY_WATCHSERVICE_ENABLED, false)) {
                 Long pollInterval = MapUtils.getLong(env, PROPERTY_KEY_WATCHSERVICE_POLL_INTERVALL);
-                smbPoller = (pollInterval != null) ? new StandardSMBPoller(pollInterval) : new StandardSMBPoller();
+                smbPoller = (pollInterval != null) ? new StandardSmbPoller(pollInterval) : new StandardSmbPoller();
             }
         }
         return newFileSystem(uri, env, smbPoller);
@@ -153,13 +153,13 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
      *
      * @param uri URI for which to create {@link SMBFileSystem}
      * @param env Map containing configuration parameters.
-     * @param smbPoller {@link SMBPoller} to create {@link SMBWatchService} from
+     * @param smbPoller {@link SmbPoller} to create {@link SmbWatchService} from
      * @return Newly created {@link SMBFileSystem} instance
      *
      * @throws FileSystemAlreadyExistsException If an instance of {@link SMBFileSystem} already exists for provided URI.
      * @throws IllegalArgumentException If provided URI is not an SMB URI.
      */
-    public SMBFileSystem newFileSystem(URI uri, Map<String, ?> env, SMBPoller smbPoller) {
+    public SMBFileSystem newFileSystem(URI uri, Map<String, ?> env, SmbPoller smbPoller) {
         if (!uri.getScheme().equals(SMBFileSystem.SMB_SCHEME)) throw new IllegalArgumentException("The provided URI is not an SMB URI.");
 
         /* Constructs a canonical authority string, taking all possible ways to provide credentials into consideration. */

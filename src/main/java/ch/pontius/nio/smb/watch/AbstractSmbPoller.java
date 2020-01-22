@@ -10,7 +10,6 @@ import java.nio.file.ClosedWatchServiceException;
 import java.nio.file.Path;
 import java.nio.file.StandardWatchEventKinds;
 import java.nio.file.WatchEvent;
-import java.nio.file.WatchKey;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.HashSet;
@@ -18,12 +17,13 @@ import java.util.LinkedList;
 import java.util.Set;
 
 /**
+ * Abstract base implementation of a SMB poller. This class basically manages the registration and concurrency aspects of the file change polling.
  *
  * @author Jörg Frommann
  */
-public abstract class AbstractSMBPoller implements SMBPoller {
+public abstract class AbstractSmbPoller implements SmbPoller {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractSMBPoller.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractSmbPoller.class);
 
     private enum RequestType {
         REGISTER,
@@ -31,19 +31,19 @@ public abstract class AbstractSMBPoller implements SMBPoller {
         CLOSE
     }
 
-    private final LinkedList<AbstractSMBPoller.Request> requests = new LinkedList<>();
+    private final LinkedList<AbstractSmbPoller.Request> requests = new LinkedList<>();
     private final long pollIntervalMillis;
 
-    private SMBWatchService watcher;
+    private SmbWatchService watcher;
     private boolean shutdown;
 
-    protected final BidiMap<Path, SMBWatchKey> registry = new DualHashBidiMap<>();
+    protected final BidiMap<Path, SmbWatchKey> registry = new DualHashBidiMap<>();
 
-    public AbstractSMBPoller(long pollIntervalMillis) {
+    public AbstractSmbPoller(long pollIntervalMillis) {
         this.pollIntervalMillis = pollIntervalMillis;
     }
 
-    public void start(SMBWatchService watcher) {
+    public void start(SmbWatchService watcher) {
         this.watcher = watcher;
 
         AccessController.doPrivileged(new PrivilegedAction<Object>() {
@@ -88,7 +88,7 @@ public abstract class AbstractSMBPoller implements SMBPoller {
     protected abstract void poll();
 
     @Override
-    public WatchKey register(Path path, WatchEvent.Kind<?>[] kinds, WatchEvent.Modifier... modifiers) throws IOException {
+    public SmbWatchKey register(Path path, WatchEvent.Kind<?>[] kinds, WatchEvent.Modifier... modifiers) throws IOException {
         if (path == null) {
             throw new NullPointerException("Path is null");
         } else {
@@ -112,28 +112,28 @@ public abstract class AbstractSMBPoller implements SMBPoller {
             if (filteredKinds.isEmpty()) {
                 throw new IllegalArgumentException("No events to register");
             } else {
-                return (WatchKey) invoke(AbstractSMBPoller.RequestType.REGISTER, path, filteredKinds, modifiers);
+                return (SmbWatchKey) invoke(AbstractSmbPoller.RequestType.REGISTER, path, filteredKinds, modifiers);
             }
         }
     }
 
-    protected SMBWatchKey doRegister(Path path, Set<? extends WatchEvent.Kind<?>> kinds, WatchEvent.Modifier... modifiers) {
+    protected SmbWatchKey doRegister(Path path, Set<? extends WatchEvent.Kind<?>> kinds, WatchEvent.Modifier... modifiers) {
         LOGGER.debug("Register: {} - {}", path, kinds);
-        final SMBWatchKey key = new SMBWatchKey(path, watcher, kinds);
+        final SmbWatchKey key = new SmbWatchKey(path, watcher, kinds);
         // Modifiers are dismissed at the moment.
         registry.put(path, key);
         return key;
     }
 
-    public void cancel(SMBWatchKey key) {
+    public void cancel(SmbWatchKey key) {
         try {
-            invoke(AbstractSMBPoller.RequestType.CANCEL, key);
+            invoke(AbstractSmbPoller.RequestType.CANCEL, key);
         } catch (IOException e) {
             throw new AssertionError(e.getMessage(), e);
         }
     }
 
-    protected void doCancel(SMBWatchKey key) {
+    protected void doCancel(SmbWatchKey key) {
         if (key.isValid()) {
             LOGGER.debug("Cancel: {} - {}", key.path, key.kinds);
             registry.removeValue(key);
@@ -142,7 +142,7 @@ public abstract class AbstractSMBPoller implements SMBPoller {
 
     @Override
     public void close() throws IOException {
-        invoke(AbstractSMBPoller.RequestType.CLOSE);
+        invoke(AbstractSmbPoller.RequestType.CLOSE);
     }
 
     protected void doClose() {
@@ -151,8 +151,8 @@ public abstract class AbstractSMBPoller implements SMBPoller {
         LOGGER.info("SMB poller closed");
     }
 
-    private Object invoke(AbstractSMBPoller.RequestType type, Object... params) throws IOException {
-        final AbstractSMBPoller.Request request = new AbstractSMBPoller.Request(type, params);
+    private Object invoke(AbstractSmbPoller.RequestType type, Object... params) throws IOException {
+        final AbstractSmbPoller.Request request = new AbstractSmbPoller.Request(type, params);
         synchronized(requests) {
             if (shutdown) {
                 throw new ClosedWatchServiceException();
@@ -172,7 +172,7 @@ public abstract class AbstractSMBPoller implements SMBPoller {
     }
 
     protected boolean processRequests() {
-        AbstractSMBPoller.Request request;
+        AbstractSmbPoller.Request request;
         synchronized(this.requests) {
             while((request = requests.poll()) != null) {
                 if (shutdown) {
@@ -190,7 +190,7 @@ public abstract class AbstractSMBPoller implements SMBPoller {
                         break;
                     case CANCEL:
                         params = request.parameters();
-                        final SMBWatchKey key = (SMBWatchKey) params[0];
+                        final SmbWatchKey key = (SmbWatchKey) params[0];
                         doCancel(key);
                         request.release(null);
                         break;
@@ -208,27 +208,31 @@ public abstract class AbstractSMBPoller implements SMBPoller {
         return shutdown;
     }
 
-    protected void signalEvent(SMBWatchKey key, WatchEvent.Kind<?> kind, Path path) {
+    protected void signalEvent(SmbWatchKey key, WatchEvent.Kind<?> kind, Path path) {
         if (key.kinds().contains(kind)) {
             LOGGER.debug("Signal event: {} - {} - {}", key, kind, path);
             key.signalEvent(kind, path);
         }
     }
 
+    public boolean isShutdown() {
+        return shutdown;
+    }
+
     private static class Request {
 
-        private final AbstractSMBPoller.RequestType type;
+        private final AbstractSmbPoller.RequestType type;
         private final Object[] params;
         private boolean completed;
 
         private Object result;
 
-        Request(AbstractSMBPoller.RequestType type, Object... params) {
+        Request(AbstractSmbPoller.RequestType type, Object... params) {
             this.type = type;
             this.params = params;
         }
 
-        AbstractSMBPoller.RequestType type() {
+        AbstractSmbPoller.RequestType type() {
             return type;
         }
 

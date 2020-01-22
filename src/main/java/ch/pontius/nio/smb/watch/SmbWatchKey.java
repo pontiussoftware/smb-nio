@@ -16,10 +16,11 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
+ * SMB-specific implementation of a {@link WatchKey}
  *
  * @author Jörg Frommann
  */
-public class SMBWatchKey implements WatchKey {
+public class SmbWatchKey implements WatchKey {
 
     private enum State {
         READY,
@@ -27,26 +28,26 @@ public class SMBWatchKey implements WatchKey {
     }
 
     static final int MAX_EVENT_LIST_SIZE = 512;
-    static final SMBWatchKey.Event<Object> OVERFLOW_EVENT;
+    static final SmbWatchKey.Event<Object> OVERFLOW_EVENT;
 
     final Path path;
-    final SMBWatchService watcher;
+    final SmbWatchService watcher;
     final Set<? extends WatchEvent.Kind<?>> kinds;
 
-    private SMBWatchKey.State state;
+    private SmbWatchKey.State state;
     private List<WatchEvent<?>> events;
 
     private Map<Path, WatchEvent<?>> lastModifyEvents;
 
     static {
-        OVERFLOW_EVENT = new SMBWatchKey.Event<>(StandardWatchEventKinds.OVERFLOW, null);
+        OVERFLOW_EVENT = new SmbWatchKey.Event<>(StandardWatchEventKinds.OVERFLOW, null);
     }
 
-    SMBWatchKey(Path path, SMBWatchService watcher, Set<? extends WatchEvent.Kind<?>> kinds) {
+    SmbWatchKey(Path path, SmbWatchService watcher, Set<? extends WatchEvent.Kind<?>> kinds) {
         this.path = path;
         this.watcher = watcher;
         this.kinds = kinds;
-        state = SMBWatchKey.State.READY;
+        state = SmbWatchKey.State.READY;
         events = new ArrayList<>();
         lastModifyEvents = new HashMap<>();
     }
@@ -73,9 +74,9 @@ public class SMBWatchKey implements WatchKey {
     @Override
     public final boolean reset() {
         synchronized(this) {
-            if (state == SMBWatchKey.State.SIGNALLED && isValid()) {
+            if (state == SmbWatchKey.State.SIGNALLED && isValid()) {
                 if (events.isEmpty()) {
-                    state = SMBWatchKey.State.READY;
+                    state = SmbWatchKey.State.READY;
                 } else {
                     watcher.enqueueKey(this);
                 }
@@ -105,7 +106,7 @@ public class SMBWatchKey implements WatchKey {
             if (size > 0) {
                 final WatchEvent<?> event = events.get(size - 1);
                 if (event.kind() == StandardWatchEventKinds.OVERFLOW || kind == event.kind() && Objects.equals(path, event.context())) {
-                    ((SMBWatchKey.Event<?>) event).increment();
+                    ((SmbWatchKey.Event<?>) event).increment();
                     return;
                 }
 
@@ -114,7 +115,7 @@ public class SMBWatchKey implements WatchKey {
                         final WatchEvent<?> modifyEvent = lastModifyEvents.get(path);
                         if (modifyEvent != null) {
                             assert modifyEvent.kind() == StandardWatchEventKinds.ENTRY_MODIFY;
-                            ((SMBWatchKey.Event<?>) modifyEvent).increment();
+                            ((SmbWatchKey.Event<?>) modifyEvent).increment();
                             return;
                         }
                     } else {
@@ -129,7 +130,7 @@ public class SMBWatchKey implements WatchKey {
                 }
             }
 
-            final SMBWatchKey.Event<?> event = new SMBWatchKey.Event(kind, path);
+            final SmbWatchKey.Event<?> event = new SmbWatchKey.Event(kind, path);
             if (modify) {
                 lastModifyEvents.put(path, event);
             } else if (kind == StandardWatchEventKinds.OVERFLOW) {
@@ -144,8 +145,8 @@ public class SMBWatchKey implements WatchKey {
 
     private void signal() {
         synchronized(this) {
-            if (state == SMBWatchKey.State.READY) {
-                state = SMBWatchKey.State.SIGNALLED;
+            if (state == SmbWatchKey.State.READY) {
+                state = SmbWatchKey.State.SIGNALLED;
                 watcher.enqueueKey(this);
             }
         }
@@ -160,7 +161,7 @@ public class SMBWatchKey implements WatchKey {
             return false;
         }
 
-        final SMBWatchKey that = (SMBWatchKey) o;
+        final SmbWatchKey that = (SmbWatchKey) o;
         return new EqualsBuilder()
                 .append(watcher, that.watcher)
                 .append(path, that.path)

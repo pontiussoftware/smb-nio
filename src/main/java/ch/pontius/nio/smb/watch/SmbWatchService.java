@@ -13,14 +13,15 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 
 /**
+ * SMB-specific implementation of a {@link WatchService}
  *
  * @author Jörg Frommann
  */
-public class SMBWatchService implements WatchService {
+public class SmbWatchService implements WatchService {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(SMBWatchService.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SmbWatchService.class);
 
-    private static final WatchKey CLOSE_KEY = new SMBWatchKey(null, null, null) {
+    private static final WatchKey CLOSE_KEY = new SmbWatchKey(null, null, null) {
         public boolean isValid() {
             return true;
         }
@@ -30,12 +31,12 @@ public class SMBWatchService implements WatchService {
     };
 
     private final LinkedBlockingDeque<WatchKey> pendingKeys = new LinkedBlockingDeque<>();
-    private final SMBPoller poller;
+    private final SmbPoller poller;
 
     private volatile boolean closed;
     private final Object closeLock = new Object();
 
-    public SMBWatchService(SMBPoller poller) {
+    public SmbWatchService(SmbPoller poller) {
         this.poller = poller;
         poller.start(this);
     }
@@ -44,7 +45,7 @@ public class SMBWatchService implements WatchService {
         return poller.register(path, kinds, modifiers);
     }
 
-    void cancel(SMBWatchKey key) {
+    void cancel(SmbWatchKey key) {
         poller.cancel(key);
     }
 

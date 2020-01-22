@@ -18,64 +18,74 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 
 /**
+ * Standard implementation of a SMB poller
+ *
  * @author Jörg Frommann
  */
-public class StandardSMBPoller extends AbstractSMBPoller {
+public class StandardSmbPoller extends AbstractSmbPoller {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(StandardSMBPoller.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(StandardSmbPoller.class);
 
     public static final long DEFAULT_POLL_INTERVALL_MILLIS = 30_000;
 
-    private final Map<Path, FileTime> lastModified = new HashMap<>();
-    private final Map<Path, Set<Path>> knownDirContent = new HashMap<>();
+    final Map<Path, FileTime> modifiedTimes = new HashMap<>();
+    final Map<Path, Set<Path>> knownDirContent = new HashMap<>();
+    final PathAccessor pathAccessor;
 
-    public StandardSMBPoller() {
-        super(DEFAULT_POLL_INTERVALL_MILLIS);
+    public StandardSmbPoller() {
+        this(DEFAULT_POLL_INTERVALL_MILLIS);
     }
 
-    public StandardSMBPoller(long pollIntervalMillis) {
+    public StandardSmbPoller(long pollIntervalMillis) {
+        this(pollIntervalMillis, new StandardPathAccessor());
+    }
+
+    StandardSmbPoller(long pollIntervalMillis, PathAccessor pathAccessor) {
         super(pollIntervalMillis);
+        this.pathAccessor = pathAccessor;
     }
 
     @Override
-    protected SMBWatchKey doRegister(Path path, Set<? extends WatchEvent.Kind<?>> kinds, WatchEvent.Modifier... modifiers) {
-        final SMBWatchKey key = super.doRegister(path, kinds, modifiers);
+    protected SmbWatchKey doRegister(Path path, Set<? extends WatchEvent.Kind<?>> kinds, WatchEvent.Modifier... modifiers) {
+        final SmbWatchKey key = super.doRegister(path, kinds, modifiers);
         registerPathAttributes(path);
         return key;
     }
 
     private void registerPathAttributes(Path path) {
-        try {
-            lastModified.put(path, lastModifiedTime(path));
-            if (Files.isDirectory(path)) {
-                final Set<Path> dirContent = knownDirContent.computeIfAbsent(path, p -> new HashSet<>());
-                Files.list(path).forEach(dirContent::add);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to register attributes of path: " + path, e);
+        modifiedTimes.put(path, pathAccessor.lastModifiedTime(path));
+        if (pathAccessor.isDirectory(path)) {
+            final Set<Path> dirContent = knownDirContent.computeIfAbsent(path, p -> new HashSet<>());
+            pathAccessor.list(path).forEach(dirContent::add);
         }
     }
 
     @Override
     protected void poll() {
+        final List<Event> events = pollEvents();
+        signalEvents(events);
+    }
+
+    List<Event> pollEvents() {
         final List<Event> events = new ArrayList<>();
 
-        for (final Map.Entry<Path, SMBWatchKey> entry : registry.entrySet()) {
+        for (final Map.Entry<Path, SmbWatchKey> entry : registry.entrySet()) {
             final Path path = entry.getKey();
-            final SMBWatchKey key = entry.getValue();
+            final SmbWatchKey key = entry.getValue();
 
             try {
-                if (Files.exists(path)) {
+                if (pathAccessor.exists(path)) {
                     if (isModified(path)) {
                         if (isKnownDirectory(path)) {
                             final Set<Path> cachedDirContent = knownDirContent.get(path);
-                            final Set<Path> actualDirContent = Files.list(path).collect(Collectors.toSet());
+                            final Set<Path> actualDirContent = pathAccessor.list(path).collect(Collectors.toSet());
                             for (final Iterator<Path> it = cachedDirContent.iterator(); it.hasNext();) {
                                 final Path sub = it.next();
                                 if (!actualDirContent.contains(sub)) {
@@ -103,27 +113,18 @@ public class StandardSMBPoller extends AbstractSMBPoller {
             }
         }
 
-        signalEvents(events);
+        return events;
     }
 
-    private boolean isModified(Path path) {
-        final FileTime lastModifiedTime = lastModifiedTime(path);
-        final boolean modified = lastModifiedTime.compareTo(lastModified.get(path)) > 0;
-        lastModified.put(path, lastModifiedTime);
+    boolean isModified(Path path) {
+        final FileTime lastModifiedTime = pathAccessor.lastModifiedTime(path);
+        final boolean modified = lastModifiedTime.compareTo(modifiedTimes.get(path)) > 0;
+        modifiedTimes.put(path, lastModifiedTime);
         return modified;
     }
 
     private boolean isKnownDirectory(Path path) {
         return knownDirContent.containsKey(path);
-    }
-
-    private FileTime lastModifiedTime(Path path) {
-        try {
-            final SMBFileAttributeView  attributeView = Files.getFileAttributeView(path, SMBFileAttributeView.class);
-            return attributeView.readAttributes().lastModifiedTime();
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to determine modification time of path: " + path, e);
-        }
     }
 
     private void signalEvents(List<Event> events) {
@@ -138,27 +139,30 @@ public class StandardSMBPoller extends AbstractSMBPoller {
     }
 
     @Override
-    protected void doCancel(SMBWatchKey key) {
+    protected void doCancel(SmbWatchKey key) {
         super.doCancel(key);
         if (key.isValid()) {
-            lastModified.remove(key.watchable());
+            modifiedTimes.remove(key.watchable());
             knownDirContent.remove(key.watchable());
         }
     }
 
     private void unregisterPathAttributes(Path path) {
-        lastModified.remove(path);
+        modifiedTimes.remove(path);
         knownDirContent.remove(path);
     }
 
     @Override
     protected void doClose() {
         super.doClose();
-        lastModified.clear();
+        modifiedTimes.clear();
         knownDirContent.clear();
     }
 
-    private enum EventType {
+    /**
+     * Internal event type
+     */
+    enum EventType {
         DELETE(ENTRY_DELETE),
         CREATE(ENTRY_CREATE),
         MODIFY(ENTRY_MODIFY);
@@ -170,15 +174,67 @@ public class StandardSMBPoller extends AbstractSMBPoller {
         }
     }
 
-    private static class Event {
-        final SMBWatchKey key;
+    /**
+     * Internal event class
+     */
+    static class Event {
+        final SmbWatchKey key;
         final EventType type;
         final Path path;
 
-        public Event(SMBWatchKey key, EventType type, Path path) {
+        public Event(SmbWatchKey key, EventType type, Path path) {
             this.key = key;
             this.type = type;
             this.path = path;
+        }
+    }
+
+    /**
+     * Interface to access a path physically
+     */
+    interface PathAccessor {
+
+        boolean exists(Path path);
+
+        boolean isDirectory(Path path);
+
+        Stream<Path> list(Path dir);
+
+        FileTime lastModifiedTime(Path path);
+    }
+
+    /**
+     * Standard implementation of physical path access
+     */
+    private static class StandardPathAccessor implements PathAccessor {
+
+        @Override
+        public boolean exists(Path path) {
+            return Files.exists(path);
+        }
+
+        @Override
+        public boolean isDirectory(Path path) {
+            return Files.isDirectory(path);
+        }
+
+        @Override
+        public Stream<Path> list(Path dir) {
+            try {
+                return Files.list(dir);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to list files of directory: " + dir, e);
+            }
+        }
+
+        @Override
+        public FileTime lastModifiedTime(Path path) {
+            try {
+                final SMBFileAttributeView  attributeView = Files.getFileAttributeView(path, SMBFileAttributeView.class);
+                return attributeView.readAttributes().lastModifiedTime();
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to determine modification time of path: " + path, e);
+            }
         }
     }
 }

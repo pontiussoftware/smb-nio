@@ -1,6 +1,6 @@
 package ch.pontius.nio.smb;
 
-import ch.pontius.nio.smb.watch.SMBWatchService;
+import ch.pontius.nio.smb.watch.SmbWatchService;
 import com.sun.nio.file.ExtendedWatchEventModifier;
 import jcifs.smb.SmbFile;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -546,8 +546,8 @@ public final class SMBPath implements Path {
 
     @Override
     public WatchKey register(WatchService watcher, WatchEvent.Kind<?>[] kinds, WatchEvent.Modifier... modifiers) throws IOException {
-        if (watcher instanceof SMBWatchService) {
-            return ((SMBWatchService) watcher).register(this, kinds, modifiers);
+        if (watcher instanceof SmbWatchService) {
+            return ((SmbWatchService) watcher).register(this, kinds, modifiers);
         } else {
             throw new IOException("Unsupported type of WatchService: " + watcher);
         }
