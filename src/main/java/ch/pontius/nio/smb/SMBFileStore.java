@@ -75,7 +75,7 @@ public final class SMBFileStore extends FileStore {
     @Override
     public long getTotalSpace() throws IOException {
         if (!this.fileSystem.isOpen()) throw new ClosedFileSystemException();
-        return new SmbFile(this.name()).length();
+        return new SmbFile(this.name(), fileSystem.context()).length();
     }
 
     /**
@@ -88,7 +88,7 @@ public final class SMBFileStore extends FileStore {
     @Override
     public long getUsableSpace() throws IOException {
         if (!this.fileSystem.isOpen()) throw new ClosedFileSystemException();
-        return new SmbFile(this.name()).getDiskFreeSpace();
+        return new SmbFile(this.name(), fileSystem.context()).getDiskFreeSpace();
     }
 
     /**
@@ -101,7 +101,7 @@ public final class SMBFileStore extends FileStore {
     @Override
     public long getUnallocatedSpace() throws IOException {
         if (!this.fileSystem.isOpen()) throw new ClosedFileSystemException();
-        return new SmbFile(this.name()).getDiskFreeSpace();
+        return new SmbFile(this.name(), fileSystem.context()).getDiskFreeSpace();
     }
 
     /**

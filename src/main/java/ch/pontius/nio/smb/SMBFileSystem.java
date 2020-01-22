@@ -1,17 +1,25 @@
 package ch.pontius.nio.smb;
 
+import ch.pontius.nio.smb.watch.SmbPoller;
+import ch.pontius.nio.smb.watch.SmbWatchService;
+import jcifs.CIFSContext;
 import jcifs.smb.SmbException;
 import jcifs.smb.SmbFile;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
-
-import java.nio.file.*;
+import java.nio.file.ClosedFileSystemException;
+import java.nio.file.FileStore;
+import java.nio.file.FileSystem;
+import java.nio.file.Path;
+import java.nio.file.PathMatcher;
+import java.nio.file.WatchService;
 import java.nio.file.attribute.FileAttributeView;
 import java.nio.file.attribute.UserPrincipalLookupService;
-import java.nio.file.spi.FileSystemProvider;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -22,7 +30,6 @@ import java.util.stream.Collectors;
  * The {@link SMBFileSystem} is the factory for several types of objects, like {@link SMBPath}, {@link SMBFileStore} etc.
  *
  * @author      Ralph Gasser
- * @version     1.0
  * @since       1.0
  */
 public final class SMBFileSystem extends FileSystem {
@@ -50,15 +57,33 @@ public final class SMBFileSystem extends FileSystem {
     /** The {@link SMBFileSystemProvider} instance this {@link SMBFileSystem} belongs to. */
     private final SMBFileSystemProvider provider;
 
+    private final CIFSContext context;
+
+    /** Optional {@link SmbPoller} to create {@link SmbWatchService} from */
+    private SmbPoller smbPoller;
+
     /**
      * Constructor for {@link SMBFileSystem}.
      *
      * @param provider The {@link SMBFileSystemProvider} instance associated with this {@link SMBFileSystem}.
      * @param authority The identifier of the {@link SMBFileSystem}; usually defaults to the URI's authority part.
      */
-    SMBFileSystem(SMBFileSystemProvider provider, String authority) {
+    SMBFileSystem(SMBFileSystemProvider provider, String authority, CIFSContext context) {
         this.identifier = authority;
         this.provider = provider;
+        this.context = context;
+    }
+
+    /**
+     * Constructor for {@link SMBFileSystem}.
+     *
+     * @param provider The {@link SMBFileSystemProvider} instance associated with this {@link SMBFileSystem}.
+     * @param authority The identifier of the {@link SMBFileSystem}; usually defaults to the URI's authority part.
+     * @param smbPoller Optional {@link SmbPoller} to create {@link SmbWatchService} from.
+     */
+    SMBFileSystem(SMBFileSystemProvider provider, String authority, CIFSContext context, SmbPoller smbPoller) {
+        this(provider, authority, context);
+        this.smbPoller = smbPoller;
     }
 
     /**
@@ -67,8 +92,16 @@ public final class SMBFileSystem extends FileSystem {
      * @return {@link SMBFileSystemProvider}
      */
     @Override
-    public FileSystemProvider provider() {
-        return this.provider;
+    public SMBFileSystemProvider provider() {
+        return provider;
+    }
+
+    /**
+     * Returns the {@link CIFSContext}
+     * @return {@link CIFSContext}
+     */
+    public CIFSContext context() {
+        return context;
     }
 
     /**
@@ -123,7 +156,7 @@ public final class SMBFileSystem extends FileSystem {
     public Iterable<Path> getRootDirectories() {
         if (!this.isOpen()) throw new ClosedFileSystemException();
         try {
-            SmbFile file = new SmbFile(SMBFileSystem.SMB_SCHEME + SMBFileSystem.SCHEME_SEPARATOR + this.identifier + "/");
+            SmbFile file = new SmbFile(SMBFileSystem.SMB_SCHEME + SMBFileSystem.SCHEME_SEPARATOR + this.identifier + "/", context);
             return Arrays.stream(file.list()).map(s -> (Path)(new SMBPath(this, "/" + s))).collect(Collectors.toList());
         } catch (MalformedURLException | SmbException e) {
             return new ArrayList<>(0);
@@ -139,7 +172,7 @@ public final class SMBFileSystem extends FileSystem {
     public Iterable<FileStore> getFileStores() {
         if (!this.isOpen()) throw new ClosedFileSystemException();
         try {
-            SmbFile file = new SmbFile(SMBFileSystem.SMB_SCHEME + SMBFileSystem.SCHEME_SEPARATOR + this.identifier + "/");
+            SmbFile file = new SmbFile(SMBFileSystem.SMB_SCHEME + SMBFileSystem.SCHEME_SEPARATOR + this.identifier + "/", context);
             return Arrays.stream(file.list()).map(s -> (FileStore)(new SMBFileStore(this, s))).collect(Collectors.toList());
         } catch (MalformedURLException | SmbException e) {
             return new ArrayList<>(0);
@@ -200,13 +233,15 @@ public final class SMBFileSystem extends FileSystem {
     }
 
     /**
-     * {@link WatchService} are not supported by the current version of {@link SMBFileSystem}.
-     *
-     * @throws UnsupportedOperationException Always
+     * {@inheritDoc}
      */
     @Override
     public WatchService newWatchService() throws IOException {
-        throw new UnsupportedOperationException("The SMBFileSystem does not support WatchService.");
+        if (smbPoller != null) {
+            return new SmbWatchService(smbPoller);
+        } else {
+            throw new IOException("No SMBPoller instance registered, WatchService is not supported.");
+        }
     }
 
     /**

@@ -1,6 +1,20 @@
 package ch.pontius.nio.smb;
 
+import ch.pontius.nio.smb.watch.SmbPoller;
+import ch.pontius.nio.smb.watch.SmbWatchService;
+import ch.pontius.nio.smb.watch.StandardSmbPoller;
+import jcifs.CIFSContext;
+import jcifs.CIFSException;
+import jcifs.Configuration;
+import jcifs.config.PropertyConfiguration;
+import jcifs.context.AbstractCIFSContext;
+import jcifs.context.BaseContext;
+import jcifs.context.CIFSContextCredentialWrapper;
+import jcifs.context.SingletonContext;
+import jcifs.smb.NtlmPasswordAuthentication;
 import jcifs.smb.SmbFile;
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -35,28 +49,29 @@ import java.util.concurrent.ConcurrentHashMap;
  * all the file access functionality.
  *
  * @author      Ralph Gasser
- * @version     1.0.1
  * @since       1.0
  */
 public final class SMBFileSystemProvider extends FileSystemProvider {
 
-    /** Key for the domain property in the env map {@link SMBFileSystemProvider#constructAuthority(URI, Map)}. */
-    private final static String PROPERTY_KEY_DOMAIN = "domain";
+    /** Key for the domain property in the env map {@link SMBFileSystemProvider#constructAuthority(URI, Map, CIFSContext)}. */
+    public static final String PROPERTY_KEY_DOMAIN = "domain";
 
-    /** Key for the username property in the env map {@link SMBFileSystemProvider#constructAuthority(URI, Map)}. */
-    private final static String PROPERTY_KEY_USERNAME = "username";
+    /** Key for the username property in the env map {@link SMBFileSystemProvider#constructAuthority(URI, Map, CIFSContext)}. */
+    public static final String PROPERTY_KEY_USERNAME = "username";
 
-    /** Key for the password property in the env map {@link SMBFileSystemProvider#constructAuthority(URI, Map)}. */
-    private final static String PROPERTY_KEY_PASSWORD  = "password";
+    /** Key for the password property in the env map {@link SMBFileSystemProvider#constructAuthority(URI, Map, CIFSContext)}. */
+    public static final String PROPERTY_KEY_PASSWORD  = "password";
 
-    /** Key for the password property in the env map {@link SMBFileSystemProvider#constructAuthority(URI, Map)}. */
-    private final static String PROPERTY_KEY_JCIFS_DOMAIN  = "jcifs.smb.client.domain";
+    /** Key to enable a smb watchservice */
+    public static final String PROPERTY_KEY_WATCHSERVICE_ENABLED = "smb.watchservice.enabled";
 
-    /** Key for the password property in the env map {@link SMBFileSystemProvider#constructAuthority(URI, Map)}. */
-    private final static String PROPERTY_KEY_JCIFS_USERNAME  = "jcifs.smb.client.username";
+    /** Key for the smb watchservice poll interval in milliseconds */
+    public static final String PROPERTY_KEY_WATCHSERVICE_POLL_INTERVALL = "smb.watchservice.pollInterval";
 
-    /** Key for the password property in the env map {@link SMBFileSystemProvider#constructAuthority(URI, Map)}. */
-    private final static String PROPERTY_KEY_JCIFS_PASSWORD  = "jcifs.smb.client.password";
+    /** Key prefix for jcifs properties */
+    private static final String JCIFS_PROPERTY_KEY_PREFIX  = "jcifs.";
+
+    private static SMBFileSystemProvider DEFAULT;
 
     /** Local cache of {@link SMBFileSystem} instances. */
     final Map<String ,SMBFileSystem> fileSystemCache;
@@ -64,6 +79,17 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
     /** Default constructor for {@link SMBFileSystemProvider}. */
     public SMBFileSystemProvider() {
         this.fileSystemCache = new ConcurrentHashMap<>();
+    }
+
+    /**
+     * Gets the default instance of the SMBFileSystemProvider
+     * @return Default instance
+     */
+    public static synchronized SMBFileSystemProvider getDefault() {
+        if (DEFAULT == null) {
+            DEFAULT = new SMBFileSystemProvider();
+        }
+        return DEFAULT;
     }
 
     /**
@@ -100,20 +126,122 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
      */
     @Override
     public SMBFileSystem newFileSystem(URI uri, Map<String, ?> env) {
+        SmbPoller smbPoller = null;
+        if (MapUtils.isNotEmpty(env)) {
+            if (MapUtils.getBooleanValue(env, PROPERTY_KEY_WATCHSERVICE_ENABLED, false)) {
+                Long pollInterval = MapUtils.getLong(env, PROPERTY_KEY_WATCHSERVICE_POLL_INTERVALL);
+                smbPoller = (pollInterval != null) ? new StandardSmbPoller(pollInterval) : new StandardSmbPoller();
+            }
+        }
+        return newFileSystem(uri, env, smbPoller);
+    }
+
+    /**
+     * Creates a new {@link SMBFileSystem} instance for the provided URI. {@link SMBFileSystem} instances are cached based
+     * on the authority part of the URI (i.e. URI's with the same authority share the same {@link SMBFileSystem} instance).
+     *
+     * Credentials for connecting with the SMB/CIFS server can be provided in several ways:
+     *
+     * <ol>
+     *      <li>Encode in the URI, e.g. smb://WORKGROUP;admin:1234@192.168.1.10 </li>
+     *      <li>Provide in the env Map. To do so, you have to set the keys 'workgroup', 'username' and 'password'. </li>
+     *      <li>Provide in the jCIFS config. See jCIFS documentation for more information. </li>
+     * </ol>
+     *
+     * The above options will be considered according to precedence. That is, if the credentials are encoded in the URI those provided in
+     * the env map or the jCIFS config will be ignored.
+     *
+     * @param uri URI for which to create {@link SMBFileSystem}
+     * @param env Map containing configuration parameters.
+     * @param smbPoller {@link SmbPoller} to create {@link SmbWatchService} from
+     * @return Newly created {@link SMBFileSystem} instance
+     *
+     * @throws FileSystemAlreadyExistsException If an instance of {@link SMBFileSystem} already exists for provided URI.
+     * @throws IllegalArgumentException If provided URI is not an SMB URI.
+     */
+    public SMBFileSystem newFileSystem(URI uri, Map<String, ?> env, SmbPoller smbPoller) {
         if (!uri.getScheme().equals(SMBFileSystem.SMB_SCHEME)) throw new IllegalArgumentException("The provided URI is not an SMB URI.");
 
         /* Constructs a canonical authority string, taking all possible ways to provide credentials into consideration. */
         try {
-            final String authority = this.constructAuthority(uri, env);
+            CIFSContext context = createContext(env);
+            final String authority = constructAuthority(uri, env, context);
+            context = addCredential(context, authority);
 
             /* Tries to create a new SMBFileSystem. */
-            if (this.fileSystemCache.containsKey(authority)) throw new FileSystemAlreadyExistsException("Filesystem for the provided server 'smb://" + authority + "' does already exist.");
-            SMBFileSystem system = new SMBFileSystem(this, authority);
+            if (this.fileSystemCache.containsKey(authority)) {
+                throw new FileSystemAlreadyExistsException("Filesystem for the provided server 'smb://" + authority + "' does already exist.");
+            }
+            final SMBFileSystem system = new SMBFileSystem(this, authority, context, smbPoller);
             this.fileSystemCache.put(authority, system);
             return system;
         } catch (UnsupportedEncodingException e) {
             throw new IllegalArgumentException("Failed to URL encode the username and/or password in provided URI.", e);
+        } catch (CIFSException e) {
+            throw new IllegalArgumentException("Failed to create the CIFS context by the provided configuration parameters.", e);
         }
+    }
+
+    /**
+     * Retrieves a {@link SMBFileSystem} instance for the provided URI from fileSystemCache or creates a new one if it is missing.
+     * {@link SMBFileSystem} instances are cached based on the authority part of the URI (i.e. URI's with the same authority share the same
+     * {@link SMBFileSystem} instance).
+     *
+     * @param uri URI for which to fetch {@link SMBFileSystem}
+     * @param env Map containing configuration parameters.
+     * @return {@link SMBFileSystem} instance
+     *
+     * @throws FileSystemNotFoundException If no instance of {@link SMBFileSystem} could be retrieved from fileSystemCache.
+     * @throws IllegalArgumentException If provided URI is not an SMB URI.
+     */
+    public SMBFileSystem getOrCreateFileSystem(URI uri, Map<String, ?> env) {
+        if (!uri.getScheme().equals(SMBFileSystem.SMB_SCHEME)) throw new IllegalArgumentException("The provided URI is not an SMB URI.");
+
+        try {
+            final CIFSContext context = createContext(env);
+            final String authority = constructAuthority(uri, env, context);
+            return fileSystemCache.containsKey(authority) ? fileSystemCache.get(authority) : newFileSystem(uri, env);
+        } catch (UnsupportedEncodingException e) {
+            throw new IllegalArgumentException("Failed to URL encode the username and/or password in provided URI.", e);
+        } catch (CIFSException e) {
+            throw new IllegalArgumentException("Failed to create the CIFS context by the provided configuration parameters.", e);
+        }
+    }
+
+    /**
+     * Creates a {@link CIFSContext}.
+     * @param env Map containing configuration parameters
+     * @return {@link CIFSContext}
+     * @throws CIFSException if creating the context fails
+     */
+    private CIFSContext createContext(Map<String, ?> env) throws CIFSException {
+        boolean jcifsPropertiesProvided = false;
+        if (MapUtils.isNotEmpty(env)) {
+            for (final String key : env.keySet()) {
+                if (key.startsWith(JCIFS_PROPERTY_KEY_PREFIX)) {
+                    jcifsPropertiesProvided = true;
+                    break;
+                }
+            }
+        }
+        return jcifsPropertiesProvided ? new BaseContext(new PropertyConfiguration(MapUtils.toProperties(env))) : SingletonContext.getInstance();
+    }
+
+    /**
+     * Adds credentials to the give {@link CIFSContext}
+     * @param context The {@link CIFSContext}
+     * @param authority The authority part of the URI
+     * @return {@link CIFSContext} with credentials
+     */
+    private CIFSContext addCredential(CIFSContext context, String authority) {
+        if (StringUtils.isEmpty(authority)) {
+            return context;
+        }
+        final String domainAndUser = StringUtils.substringBefore(authority, "@");
+        final String userInfo = domainAndUser.contains(";") ? StringUtils.substringAfter(domainAndUser, ";") : domainAndUser;
+        return (StringUtils.isNotEmpty(userInfo))
+                ? new CIFSContextCredentialWrapper((AbstractCIFSContext) context, new NtlmPasswordAuthentication(context, userInfo))
+                : context;
     }
 
     /**
@@ -132,13 +260,13 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
 
         /* Constructs a canonical authority string, taking all possible ways to provide credentials into consideration. */
         try {
-            final String authority = this.constructAuthority(uri, new HashMap<>());
+            final String authority = this.constructAuthority(uri, new HashMap<>(), null);
 
             /* Tries to fetch an existing SMBFileSystem. */
             if (this.fileSystemCache.containsKey(authority)) {
                 return this.fileSystemCache.get(authority);
             } else {
-                throw new FileSystemNotFoundException("No filesystem for the provided server 'smb://" + uri.getAuthority() + "' could be found.");
+                throw new FileSystemNotFoundException("No filesystem for the provided server 'smb://" + authority + "' could be found.");
             }
         } catch (UnsupportedEncodingException e) {
             throw new IllegalArgumentException("Failed to URL encode the username and/or password in provided URI.", e);
@@ -159,7 +287,7 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
 
         /* Constructs a canonical authority string, taking all possible ways to provide credentials into consideration. */
         try {
-            final String authority = this.constructAuthority(uri, new HashMap<>());
+            final String authority = this.constructAuthority(uri, new HashMap<>(), null);
 
             /* Lookup authority string to determine, whether a new SMBFileSystem is required. */
             if (this.fileSystemCache.containsKey(authority)) {
@@ -345,7 +473,7 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
         SmbFile smbFile = SMBPath.fromPath(path).getSmbFile();
 
         /* First check if file exists. */
-        if (!smbFile.exists()) throw new NoSuchFileException("The specified SMB resource does not exist.");
+        if (!smbFile.exists()) throw new NoSuchFileException("The specified SMB resource does not exist: " + path);
 
         /* Determin which attributes to check. */
         boolean checkRead = false;
@@ -356,8 +484,8 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
         }
 
         /* Perform necessary checks. */
-        if (checkRead && !smbFile.canRead())  throw new AccessDeniedException("The specified SMB resource is not readable.");
-        if (checkWrite && !smbFile.canWrite())  throw new AccessDeniedException("The specified SMB resource is not writable.");
+        if (checkRead && !smbFile.canRead())  throw new AccessDeniedException("The specified SMB resource is not readable: " + path);
+        if (checkWrite && !smbFile.canWrite())  throw new AccessDeniedException("The specified SMB resource is not writable: " + path);
     }
 
     /**
@@ -432,9 +560,10 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
      *
      * @param uri The URI for which to construct an authority string.
      * @param env The env map. Can be empty.
+     * @param context The {@link CIFSContext}
      * @return A canonical authority string.
      */
-    private String constructAuthority(URI uri, Map<String, ?> env) throws UnsupportedEncodingException {
+    private String constructAuthority(URI uri, Map<String, ?> env, CIFSContext context) throws UnsupportedEncodingException {
         /* The authority string. */
         String authority;
 
@@ -443,7 +572,7 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
             authority = uri.getAuthority();
         } else {
             final StringBuilder builder = new StringBuilder();
-            if (env != null && !env.isEmpty()) {
+            if (MapUtils.isNotEmpty(env)) {
                 if (env.containsKey(PROPERTY_KEY_DOMAIN)) {
                     builder.append(env.get(PROPERTY_KEY_DOMAIN));
                     builder.append(";");
@@ -455,19 +584,20 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
                         builder.append(URLEncoder.encode(env.get(PROPERTY_KEY_PASSWORD).toString(), "UTF-8"));
                     }
                 }
-            } /*else { // ToDo; Port to jcifs-ng
-                if (Config.getProperty(PROPERTY_KEY_JCIFS_DOMAIN) != null) {
-                    builder.append(Config.getProperty(PROPERTY_KEY_JCIFS_DOMAIN));
+            } else if (context != null) {
+                final Configuration config = context.getConfig();
+                if (config.getDefaultDomain() != null) {
+                    builder.append(config.getDefaultDomain());
                     builder.append(";");
                 }
-                if (Config.getProperty(PROPERTY_KEY_JCIFS_USERNAME) != null) {
-                    builder.append(URLEncoder.encode(Config.get(PROPERTY_KEY_JCIFS_USERNAME).toString(), "UTF-8"));
-                    if (Config.getProperty(PROPERTY_KEY_JCIFS_PASSWORD) != null) {
+                if (config.getDefaultUsername() != null) {
+                    builder.append(URLEncoder.encode(config.getDefaultUsername(), "UTF-8"));
+                    if (config.getDefaultPassword() != null) {
                         builder.append(":");
-                        builder.append(URLEncoder.encode(Config.get(PROPERTY_KEY_JCIFS_PASSWORD).toString(), "UTF-8"));
+                        builder.append(URLEncoder.encode(config.getDefaultPassword(), "UTF-8"));
                     }
                 }
-            }*/
+            }
 
             if (builder.length() > 0) {
                 builder.append(SMBFileSystem.CREDENTIALS_SEPARATOR).append(uri.getAuthority());

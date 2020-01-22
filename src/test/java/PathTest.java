@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -15,7 +16,7 @@ public class PathTest {
     private static final String PATH_02 = "smb://test@192.168.1.105/home/rgasser/";
     private static final String PATH_03 = "smb://test@192.168.1.105/home/rgasser/lala/text02.xls";
     private static final String PATH_04 = "smb://test@192.168.1.106/home/rgasser/text.xls";
-    private static final String PATH_05 = "smb://test@192.168.1.106/home/rgasser/lala/text.xls";
+    private static final String PATH_05 = "smb://test@192.168.1.106/home/rgasser/";
 
 
     /**
@@ -43,7 +44,7 @@ public class PathTest {
      */
     @Test
     public void testDefinition() throws URISyntaxException {
-        final SMBFileSystemProvider provider = new SMBFileSystemProvider();
+        final SMBFileSystemProvider provider = SMBFileSystemProvider.getDefault();
         final SMBPath path01 = provider.getPath(new URI(PATH_01));
         final SMBPath path02 = provider.getPath(new URI(PATH_02));
         final SMBPath path03 = provider.getPath(new URI(PATH_04));
@@ -68,7 +69,7 @@ public class PathTest {
      */
     @Test
     public void testEquals() throws URISyntaxException {
-        final SMBFileSystemProvider provider = new SMBFileSystemProvider();
+        final SMBFileSystemProvider provider = SMBFileSystemProvider.getDefault();
         final Path path01a = provider.getPath(new URI(PATH_01));
         final Path path01b = provider.getPath(new URI(PATH_01));
         final Path path02 = provider.getPath(new URI(PATH_02));
@@ -90,7 +91,7 @@ public class PathTest {
      */
     @Test
     public void testParent() throws URISyntaxException {
-        final SMBFileSystemProvider provider = new SMBFileSystemProvider();
+        final SMBFileSystemProvider provider = SMBFileSystemProvider.getDefault();
         final Path path01a = provider.getPath(new URI(PATH_01));
         final Path parent = path01a.getParent();
         final Path test = provider.getPath(new URI(PATH_02));
@@ -110,7 +111,7 @@ public class PathTest {
      */
     @Test
     public void testFilename() throws URISyntaxException {
-        final SMBFileSystemProvider provider = new SMBFileSystemProvider();
+        final SMBFileSystemProvider provider = SMBFileSystemProvider.getDefault();
         final Path path01 = provider.getPath(new URI(PATH_01)).getFileName();
         final Path path02 = provider.getPath(new URI(PATH_02)).getFileName();
         assertAll("SMBPath.getFilename()",
@@ -128,7 +129,7 @@ public class PathTest {
      */
     @Test
     public void testRelativizeOnAbsolute() throws URISyntaxException {
-        final SMBFileSystemProvider provider = new SMBFileSystemProvider();
+        final SMBFileSystemProvider provider = SMBFileSystemProvider.getDefault();
         final Path path01 = provider.getPath(new URI(PATH_REL_IN_01));
         final Path path02 = provider.getPath(new URI(PATH_REL_IN_02));
         final Path path03 = provider.getPath(new URI(PATH_REL_IN_03));
@@ -148,5 +149,31 @@ public class PathTest {
                 () -> assertFalse(path02.relativize(path03).isAbsolute()),
                 () -> assertFalse(path03.relativize(path01).isAbsolute())
         );
+    }
+
+    @Test
+    public void testCompareTo() throws Exception {
+        final SMBFileSystemProvider provider = SMBFileSystemProvider.getDefault();
+        final Path leftPath = provider.getPath(new URI(PATH_01));
+        final Path rightPath = provider.getPath(new URI(PATH_02));
+        assertTrue(leftPath.compareTo(rightPath) > 0);
+        assertTrue(rightPath.compareTo(leftPath) < 0);
+        assertEquals(0, leftPath.compareTo(leftPath));
+    }
+
+    @Test
+    public void testCompareToDifferentFileSystem() throws Exception {
+        final SMBFileSystemProvider provider = SMBFileSystemProvider.getDefault();
+        final Path leftPath = provider.getPath(new URI(PATH_01));
+        final Path rightPath = provider.getPath(new URI(PATH_05));
+        assertThrows(IllegalArgumentException.class, () -> leftPath.compareTo(rightPath));
+    }
+
+    @Test
+    public void testCompareToDifferentProtocol() throws Exception {
+        final SMBFileSystemProvider provider = SMBFileSystemProvider.getDefault();
+        final Path leftPath = provider.getPath(new URI(PATH_01));
+        final Path rightPath = Paths.get("/tmp/test.txt");
+        assertThrows(IllegalArgumentException.class, () -> leftPath.compareTo(rightPath));
     }
 }

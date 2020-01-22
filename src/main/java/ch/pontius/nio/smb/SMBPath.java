@@ -1,13 +1,25 @@
 package ch.pontius.nio.smb;
 
+import ch.pontius.nio.smb.watch.SmbWatchService;
+import com.sun.nio.file.ExtendedWatchEventModifier;
 import jcifs.smb.SmbFile;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.*;
-import java.util.*;
+import java.nio.file.ClosedFileSystemException;
+import java.nio.file.FileSystem;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
+import java.nio.file.WatchEvent;
+import java.nio.file.WatchKey;
+import java.nio.file.WatchService;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 
 
 
@@ -459,12 +471,12 @@ public final class SMBPath implements Path {
     @Override
     public int compareTo(Path other) {
         /* Check if other path is on the same filesystem. */
-        if (!(other instanceof SMBPath))  throw new IllegalArgumentException("You can only resolve an SMB path against another SMB path.");
-        if (((SMBPath)other).fileSystem != this.fileSystem) throw new IllegalArgumentException("You can only resolve an SMB path against another SMB path on the same file system.");
+        if (!(other instanceof SMBPath))  throw new IllegalArgumentException("You can only compare an SMB path against another SMB path.");
+        if (((SMBPath)other).fileSystem != this.fileSystem) throw new IllegalArgumentException("You can only compare an SMB path against another SMB path on the same file system.");
 
-        /* */
-        String thisPath = SMBPathUtil.mergePath(this.components, 0, this.components.length, this.absolute, this.folder);
-        String thatPath = SMBPathUtil.mergePath(((SMBPath)other).components, 0, this.components.length, ((SMBPath)other).absolute, ((SMBPath)other).folder);
+        final String thisPath = SMBPathUtil.mergePath(this.components, 0, this.components.length, this.absolute, this.folder);
+        final String[] otherComponents = ((SMBPath)other).components;
+        final String thatPath = SMBPathUtil.mergePath(otherComponents, 0, otherComponents.length, other.isAbsolute(), ((SMBPath)other).folder);
         return thisPath.compareTo(thatPath);
     }
 
@@ -485,7 +497,7 @@ public final class SMBPath implements Path {
     SmbFile getSmbFile() throws IOException {
         if (!this.fileSystem.isOpen()) throw new ClosedFileSystemException();
         String path = SMBPathUtil.mergePath(this.components, 0, this.components.length, this.absolute, this.folder);
-        return new SmbFile(this.fileSystem.getFQN() + SMBFileSystem.PATH_SEPARATOR + SMBFileSystem.PATH_SEPARATOR + path);
+        return new SmbFile(this.fileSystem.getFQN() + SMBFileSystem.PATH_SEPARATOR + SMBFileSystem.PATH_SEPARATOR + path, fileSystem.context());
     }
 
     /**
@@ -495,10 +507,22 @@ public final class SMBPath implements Path {
      * @param other The object to which this object is to be compared
      * @return If, and only if, the given object is a {@link SMBPath} that is identical to this {@link SMBPath}.
      */
+    @Override
     public boolean equals(Object other) {
         if (!(other instanceof SMBPath)) return false;
         if (((SMBPath)other).fileSystem != this.fileSystem) return false;
         return Arrays.equals(this.components, ((SMBPath) other).components);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder()
+                .append(fileSystem.getName())
+                .append(components)
+                .toHashCode();
     }
 
     /**
@@ -521,12 +545,16 @@ public final class SMBPath implements Path {
     }
 
     @Override
-    public WatchKey register(WatchService watcher, WatchEvent.Kind<?>[] events, WatchEvent.Modifier... modifiers) throws IOException {
-        throw new UnsupportedOperationException("FileWatchers are currently not supported by SMB paths.");
+    public WatchKey register(WatchService watcher, WatchEvent.Kind<?>[] kinds, WatchEvent.Modifier... modifiers) throws IOException {
+        if (watcher instanceof SmbWatchService) {
+            return ((SmbWatchService) watcher).register(this, kinds, modifiers);
+        } else {
+            throw new IOException("Unsupported type of WatchService: " + watcher);
+        }
     }
 
     @Override
-    public WatchKey register(WatchService watcher, WatchEvent.Kind<?>... events) throws IOException {
-        throw new UnsupportedOperationException("FileWatchers are currently not supported by SMB paths.");
+    public WatchKey register(WatchService watcher, WatchEvent.Kind<?>... kinds) throws IOException {
+        return register(watcher, kinds, ExtendedWatchEventModifier.FILE_TREE);
     }
 }
