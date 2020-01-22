@@ -1,1 +1,1 @@
-ch.pontius.nio.smb.SMBFileSystemProvider
+com.github.jfrommann.nio.smb.SMBFileSystemProvider

@@ -1,4 +1,4 @@
-package ch.pontius.nio.smb.watch;
+package com.github.jfrommann.nio.smb.watch;
 
 import org.apache.commons.collections4.BidiMap;
 import org.apache.commons.collections4.bidimap.DualHashBidiMap;

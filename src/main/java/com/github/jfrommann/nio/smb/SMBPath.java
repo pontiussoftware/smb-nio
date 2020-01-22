@@ -1,6 +1,6 @@
-package ch.pontius.nio.smb;
+package com.github.jfrommann.nio.smb;
 
-import ch.pontius.nio.smb.watch.SmbWatchService;
+import com.github.jfrommann.nio.smb.watch.SmbWatchService;
 import com.sun.nio.file.ExtendedWatchEventModifier;
 import jcifs.smb.SmbFile;
 import org.apache.commons.lang3.builder.HashCodeBuilder;

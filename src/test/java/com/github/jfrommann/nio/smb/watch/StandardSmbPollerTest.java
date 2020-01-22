@@ -1,4 +1,4 @@
-package ch.pontius.nio.smb.watch;
+package com.github.jfrommann.nio.smb.watch;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,9 +18,9 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-import static ch.pontius.nio.smb.watch.StandardSmbPoller.EventType.CREATE;
-import static ch.pontius.nio.smb.watch.StandardSmbPoller.EventType.DELETE;
-import static ch.pontius.nio.smb.watch.StandardSmbPoller.EventType.MODIFY;
+import static com.github.jfrommann.nio.smb.watch.StandardSmbPoller.EventType.CREATE;
+import static com.github.jfrommann.nio.smb.watch.StandardSmbPoller.EventType.DELETE;
+import static com.github.jfrommann.nio.smb.watch.StandardSmbPoller.EventType.MODIFY;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;

@@ -1,4 +1,4 @@
-package ch.pontius.nio.smb.watch;
+package com.github.jfrommann.nio.smb.watch;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

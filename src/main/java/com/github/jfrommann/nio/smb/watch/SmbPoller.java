@@ -1,4 +1,4 @@
-package ch.pontius.nio.smb.watch;
+package com.github.jfrommann.nio.smb.watch;
 
 import java.io.IOException;
 import java.nio.file.Path;

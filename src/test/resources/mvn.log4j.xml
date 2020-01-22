@@ -8,7 +8,7 @@
         </layout>
     </appender>
 
-    <logger name="ch.pontius.nio.smb">
+    <logger name="com.github.jfrommann.nio.smb">
         <level value="debug" />
     </logger>
 

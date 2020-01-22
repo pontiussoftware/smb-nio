@@ -1,7 +1,7 @@
-package ch.pontius.nio.smb;
+package com.github.jfrommann.nio.smb;
 
-import ch.pontius.nio.smb.watch.SmbPoller;
-import ch.pontius.nio.smb.watch.SmbWatchService;
+import com.github.jfrommann.nio.smb.watch.SmbPoller;
+import com.github.jfrommann.nio.smb.watch.SmbWatchService;
 import jcifs.CIFSContext;
 import jcifs.smb.SmbException;
 import jcifs.smb.SmbFile;

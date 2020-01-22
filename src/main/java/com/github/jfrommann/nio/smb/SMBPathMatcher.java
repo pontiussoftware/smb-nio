@@ -1,4 +1,4 @@
-package ch.pontius.nio.smb;
+package com.github.jfrommann.nio.smb;
 
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;

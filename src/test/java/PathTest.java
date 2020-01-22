@@ -1,5 +1,5 @@
-import ch.pontius.nio.smb.SMBFileSystemProvider;
-import ch.pontius.nio.smb.SMBPath;
+import com.github.jfrommann.nio.smb.SMBFileSystemProvider;
+import com.github.jfrommann.nio.smb.SMBPath;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;

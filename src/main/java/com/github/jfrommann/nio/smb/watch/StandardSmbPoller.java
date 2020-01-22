@@ -1,6 +1,6 @@
-package ch.pontius.nio.smb.watch;
+package com.github.jfrommann.nio.smb.watch;
 
-import ch.pontius.nio.smb.SMBFileAttributeView;
+import com.github.jfrommann.nio.smb.SMBFileAttributeView;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
