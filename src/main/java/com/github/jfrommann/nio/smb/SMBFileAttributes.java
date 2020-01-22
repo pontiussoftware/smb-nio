@@ -8,19 +8,29 @@ import java.nio.file.attribute.FileTime;
 import java.util.concurrent.TimeUnit;
 
 public final class SMBFileAttributes implements BasicFileAttributes {
-    /**  nteger value encoding the resource attributes. */
+    /**
+     * nteger value encoding the resource attributes.
+     */
     private final int attributes;
 
-    /** Unix timestamp of the creation date. */
+    /**
+     * Unix timestamp of the creation date.
+     */
     private final long created;
 
-    /** Unix timestamp of the modification date. */
+    /**
+     * Unix timestamp of the modification date.
+     */
     private final long modified;
 
-    /** Content length of the file. */
+    /**
+     * Content length of the file.
+     */
     private final long length;
 
-    /** Unique code used to identify the file. */
+    /**
+     * Unique code used to identify the file.
+     */
     private final int code;
 
     /**

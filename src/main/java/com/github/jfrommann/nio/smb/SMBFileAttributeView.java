@@ -3,7 +3,6 @@ package com.github.jfrommann.nio.smb;
 import jcifs.smb.SmbFile;
 
 import java.io.IOException;
-
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
@@ -11,7 +10,9 @@ import java.util.concurrent.TimeUnit;
 
 public final class SMBFileAttributeView implements BasicFileAttributeView {
 
-    /** {@link SmbFile} reference used by the current instance of {@link SMBFileAttributeView}. */
+    /**
+     * {@link SmbFile} reference used by the current instance of {@link SMBFileAttributeView}.
+     */
     private final SMBPath path;
 
     /**

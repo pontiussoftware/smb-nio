@@ -26,9 +26,7 @@ public abstract class AbstractSmbPoller implements SmbPoller {
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractSmbPoller.class);
 
     private enum RequestType {
-        REGISTER,
-        CANCEL,
-        CLOSE
+        REGISTER, CANCEL, CLOSE
     }
 
     private final LinkedList<AbstractSmbPoller.Request> requests = new LinkedList<>();
@@ -59,7 +57,7 @@ public abstract class AbstractSmbPoller implements SmbPoller {
     private void process() {
         LOGGER.info("SMB poller started: poll interval = {} ms", pollIntervalMillis);
 
-        while(true) {
+        while (true) {
             try {
                 final boolean shouldStop = processRequests();
                 if (shouldStop) {
@@ -153,7 +151,7 @@ public abstract class AbstractSmbPoller implements SmbPoller {
 
     private Object invoke(AbstractSmbPoller.RequestType type, Object... params) throws IOException {
         final AbstractSmbPoller.Request request = new AbstractSmbPoller.Request(type, params);
-        synchronized(requests) {
+        synchronized (requests) {
             if (shutdown) {
                 throw new ClosedWatchServiceException();
             }
@@ -173,14 +171,14 @@ public abstract class AbstractSmbPoller implements SmbPoller {
 
     protected boolean processRequests() {
         AbstractSmbPoller.Request request;
-        synchronized(this.requests) {
-            while((request = requests.poll()) != null) {
+        synchronized (this.requests) {
+            while ((request = requests.poll()) != null) {
                 if (shutdown) {
                     request.release(new ClosedWatchServiceException());
                 }
 
                 Object[] params;
-                switch(request.type()) {
+                switch (request.type()) {
                     case REGISTER:
                         params = request.parameters();
                         final Path path = (Path) params[0];
@@ -241,7 +239,7 @@ public abstract class AbstractSmbPoller implements SmbPoller {
         }
 
         void release(Object result) {
-            synchronized(this) {
+            synchronized (this) {
                 completed = true;
                 this.result = result;
                 notifyAll();
@@ -250,8 +248,8 @@ public abstract class AbstractSmbPoller implements SmbPoller {
 
         Object awaitResult() {
             boolean interrupted = false;
-            synchronized(this) {
-                while(!completed) {
+            synchronized (this) {
+                while (!completed) {
                     try {
                         wait();
                     } catch (InterruptedException e) {

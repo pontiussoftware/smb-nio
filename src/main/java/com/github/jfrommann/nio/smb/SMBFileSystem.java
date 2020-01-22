@@ -26,46 +26,63 @@ import java.util.stream.Collectors;
  * This class represents a single SMB server (filesystem). The authority part of the SMB URI creates a unique {@link SMBFileSystem}, that is,
  * if you connect to the same server with different credentials, it will results in two distinc {@link SMBFileSystem} instances. Furthermore,
  * different names for the same server will result in different {@link SMBFileSystem} instances too.
- *
+ * <p>
  * The {@link SMBFileSystem} is the factory for several types of objects, like {@link SMBPath}, {@link SMBFileStore} etc.
  *
- * @author      Ralph Gasser
- * @since       1.0
+ * @author Ralph Gasser
+ * @since 1.0
  */
 public final class SMBFileSystem extends FileSystem {
-    /** Default separator between path components. */
+    /**
+     * Default separator between path components.
+     */
     static final String PATH_SEPARATOR = "/";
 
-    /** Default separator between scheme and the rest of the path. The scheme directly preceeds the authority, which denotes the server and the credentials. */
+    /**
+     * Default separator between scheme and the rest of the path. The scheme directly preceeds the authority, which denotes the server and the credentials.
+     */
     static final String SCHEME_SEPARATOR = "://";
 
-    /** Default separator between the credentials and the server. Both are part of the authority, that follows directly after the scheme and its separator. */
+    /**
+     * Default separator between the credentials and the server. Both are part of the authority, that follows directly after the scheme and its separator.
+     */
     static final String CREDENTIALS_SEPARATOR = "@";
 
-    /** URI scheme supported by SMBFileSystemProvider. */
+    /**
+     * URI scheme supported by SMBFileSystemProvider.
+     */
     static final String SMB_SCHEME = "smb";
 
-    /** Creates and initializes the set containing the supported FILE_ATTRIBUTE_VIEWS. */
+    /**
+     * Creates and initializes the set containing the supported FILE_ATTRIBUTE_VIEWS.
+     */
     private static final Set<String> SUPPORTED_FILE_ATTRIBUTE_VIEWS = new HashSet<>();
+
     static {
         SUPPORTED_FILE_ATTRIBUTE_VIEWS.add("basic");
     }
 
-    /** The URI for which the {@link SMBFileSystem} was created. */
+    /**
+     * The URI for which the {@link SMBFileSystem} was created.
+     */
     private final String identifier;
 
-    /** The {@link SMBFileSystemProvider} instance this {@link SMBFileSystem} belongs to. */
+    /**
+     * The {@link SMBFileSystemProvider} instance this {@link SMBFileSystem} belongs to.
+     */
     private final SMBFileSystemProvider provider;
 
     private final CIFSContext context;
 
-    /** Optional {@link SmbPoller} to create {@link SmbWatchService} from */
+    /**
+     * Optional {@link SmbPoller} to create {@link SmbWatchService} from
+     */
     private SmbPoller smbPoller;
 
     /**
      * Constructor for {@link SMBFileSystem}.
      *
-     * @param provider The {@link SMBFileSystemProvider} instance associated with this {@link SMBFileSystem}.
+     * @param provider  The {@link SMBFileSystemProvider} instance associated with this {@link SMBFileSystem}.
      * @param authority The identifier of the {@link SMBFileSystem}; usually defaults to the URI's authority part.
      */
     SMBFileSystem(SMBFileSystemProvider provider, String authority, CIFSContext context) {
@@ -77,7 +94,7 @@ public final class SMBFileSystem extends FileSystem {
     /**
      * Constructor for {@link SMBFileSystem}.
      *
-     * @param provider The {@link SMBFileSystemProvider} instance associated with this {@link SMBFileSystem}.
+     * @param provider  The {@link SMBFileSystemProvider} instance associated with this {@link SMBFileSystem}.
      * @param authority The identifier of the {@link SMBFileSystem}; usually defaults to the URI's authority part.
      * @param smbPoller Optional {@link SmbPoller} to create {@link SmbWatchService} from.
      */
@@ -98,6 +115,7 @@ public final class SMBFileSystem extends FileSystem {
 
     /**
      * Returns the {@link CIFSContext}
+     *
      * @return {@link CIFSContext}
      */
     public CIFSContext context() {
@@ -107,7 +125,7 @@ public final class SMBFileSystem extends FileSystem {
     /**
      * Removes the current instance of {@link SMBFileSystem} from the {@link SMBFileSystemProvider}'s cache. Calling this method will
      * not actually close any underlying resource.
-     *
+     * <p>
      * However, existing paths pointing to the current instance of {@link SMBFileSystem} will not be handled to the
      */
     @Override
@@ -133,7 +151,9 @@ public final class SMBFileSystem extends FileSystem {
      */
     @Override
     public boolean isReadOnly() {
-        if (!this.isOpen()) throw new ClosedFileSystemException();
+        if (!this.isOpen()) {
+            throw new ClosedFileSystemException();
+        }
         return false;
     }
 
@@ -154,10 +174,12 @@ public final class SMBFileSystem extends FileSystem {
      */
     @Override
     public Iterable<Path> getRootDirectories() {
-        if (!this.isOpen()) throw new ClosedFileSystemException();
+        if (!this.isOpen()) {
+            throw new ClosedFileSystemException();
+        }
         try {
             SmbFile file = new SmbFile(SMBFileSystem.SMB_SCHEME + SMBFileSystem.SCHEME_SEPARATOR + this.identifier + "/", context);
-            return Arrays.stream(file.list()).map(s -> (Path)(new SMBPath(this, "/" + s))).collect(Collectors.toList());
+            return Arrays.stream(file.list()).map(s -> (Path) (new SMBPath(this, "/" + s))).collect(Collectors.toList());
         } catch (MalformedURLException | SmbException e) {
             return new ArrayList<>(0);
         }
@@ -170,10 +192,12 @@ public final class SMBFileSystem extends FileSystem {
      */
     @Override
     public Iterable<FileStore> getFileStores() {
-        if (!this.isOpen()) throw new ClosedFileSystemException();
+        if (!this.isOpen()) {
+            throw new ClosedFileSystemException();
+        }
         try {
             SmbFile file = new SmbFile(SMBFileSystem.SMB_SCHEME + SMBFileSystem.SCHEME_SEPARATOR + this.identifier + "/", context);
-            return Arrays.stream(file.list()).map(s -> (FileStore)(new SMBFileStore(this, s))).collect(Collectors.toList());
+            return Arrays.stream(file.list()).map(s -> (FileStore) (new SMBFileStore(this, s))).collect(Collectors.toList());
         } catch (MalformedURLException | SmbException e) {
             return new ArrayList<>(0);
         }
@@ -186,7 +210,9 @@ public final class SMBFileSystem extends FileSystem {
      */
     @Override
     public Set<String> supportedFileAttributeViews() {
-        if (!this.isOpen()) throw new ClosedFileSystemException();
+        if (!this.isOpen()) {
+            throw new ClosedFileSystemException();
+        }
         return SUPPORTED_FILE_ATTRIBUTE_VIEWS;
     }
 
@@ -196,18 +222,20 @@ public final class SMBFileSystem extends FileSystem {
      * as a folder.
      *
      * @param first First path component.
-     * @param more List of additional path components.
+     * @param more  List of additional path components.
      * @return Constructed {@link SMBPath}.
      */
     @Override
     public Path getPath(String first, String... more) {
-        if (!this.isOpen()) throw new ClosedFileSystemException();
+        if (!this.isOpen()) {
+            throw new ClosedFileSystemException();
+        }
         final String[] components = new String[more.length + 1];
         components[0] = first;
         if (more.length > 0) {
             System.arraycopy(more, 0, components, 1, more.length);
         }
-        final String path = SMBPathUtil.mergePath(components, 0, components.length, first.startsWith("/"), more[more.length-1].endsWith("/"));
+        final String path = SMBPathUtil.mergePath(components, 0, components.length, first.startsWith("/"), more[more.length - 1].endsWith("/"));
         return new SMBPath(this, path);
     }
 

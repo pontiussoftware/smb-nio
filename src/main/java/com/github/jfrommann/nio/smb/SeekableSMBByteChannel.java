@@ -4,36 +4,41 @@ import jcifs.smb.SmbFile;
 import jcifs.smb.SmbRandomAccessFile;
 
 import java.io.IOException;
-
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.FileAlreadyExistsException;
 
 public final class SeekableSMBByteChannel implements SeekableByteChannel {
-    /** Internal {@link SmbRandomAccessFile} reference to write to {@link SmbFile}. */
+    /**
+     * Internal {@link SmbRandomAccessFile} reference to write to {@link SmbFile}.
+     */
     private final SmbRandomAccessFile random;
 
-    /** Boolean indicating whether this instance of {@link SeekableSMBByteChannel} is open. */
+    /**
+     * Boolean indicating whether this instance of {@link SeekableSMBByteChannel} is open.
+     */
     private volatile boolean open = true;
 
     /**
      * Constructor for {@link SeekableSMBByteChannel}
      *
-     * @param file The {@link SmbFile} instance that should be opened.
-     * @param write Flag that indicates, whether write access is requested.
-     * @param create Flag that indicates, whether file should be created.
-     * @param create_new Flag that indicates, whether file should be created. If it is set to true, operation will fail if file exists!
-     * @param truncate Flag that indicates, whether file should be truncated to length 0 when being opened.
-     * @param append Flag that indicates, whether data should be appended.
+     * @param file       The {@link SmbFile} instance that should be opened.
+     * @param write      Flag that indicates, whether write access is requested.
+     * @param create     Flag that indicates, whether file should be created.
+     * @param createNew  Flag that indicates, whether file should be created. If it is set to true, operation will fail if file exists!
+     * @param truncate   Flag that indicates, whether file should be truncated to length 0 when being opened.
+     * @param append     Flag that indicates, whether data should be appended.
      * @throws IOException If something goes wrong when accessing the file.
      */
-    SeekableSMBByteChannel(SmbFile file, boolean write, boolean create, boolean create_new, boolean truncate, boolean append) throws IOException {
+    SeekableSMBByteChannel(SmbFile file, boolean write, boolean create, boolean createNew, boolean truncate, boolean append) throws IOException {
 
         /*  Tries to create a new file, if so specified. */
-        if (create || create_new) {
+        if (create || createNew) {
             if (file.exists()) {
-                if (create_new) throw new FileAlreadyExistsException("The specified file '" + file.getPath() + "' does already exist!");
+                if (createNew) {
+                    throw new FileAlreadyExistsException("The specified file '" + file.getPath() + "' does already exist!");
+                }
             } else {
                 file.createNewFile();
             }
@@ -42,12 +47,17 @@ public final class SeekableSMBByteChannel implements SeekableByteChannel {
         /* Opens the file with either read only or write access. */
         if (write) {
             this.random = new SmbRandomAccessFile(file, "rw");
-            if (truncate) this.random.setLength(0);
-            if (append) this.random.seek(this.random.length());
+            if (truncate) {
+                this.random.setLength(0);
+            }
+            if (append) {
+                this.random.seek(this.random.length());
+            }
         } else {
             this.random = new SmbRandomAccessFile(file, "r");
         }
     }
+
     /**
      * Reads the content from the {@link SmbRandomAccessFile} handled by the current instance of {@link SeekableSMBByteChannel} to
      * the provided {@link ByteBuffer}. The {@link ByteBuffer} is written from its current position to its end.
@@ -58,11 +68,15 @@ public final class SeekableSMBByteChannel implements SeekableByteChannel {
      */
     @Override
     public synchronized int read(ByteBuffer dst) throws IOException {
-        if (!this.open) throw new ClosedChannelException();
+        if (!this.open) {
+            throw new ClosedChannelException();
+        }
         final int len = dst.limit() - dst.position();
         final byte[] buffer = new byte[len];
         final int read = this.random.read(buffer);
-        if (read > 0) dst.put(buffer, 0, read);
+        if (read > 0) {
+            dst.put(buffer, 0, read);
+        }
         return read;
     }
 
@@ -76,7 +90,9 @@ public final class SeekableSMBByteChannel implements SeekableByteChannel {
      */
     @Override
     public synchronized int write(ByteBuffer src) throws IOException {
-        if (!this.open) throw new ClosedChannelException();
+        if (!this.open) {
+            throw new ClosedChannelException();
+        }
         final int len = src.limit() - src.position();
         final byte[] buffer = new byte[len];
         src.get(buffer);
@@ -92,7 +108,9 @@ public final class SeekableSMBByteChannel implements SeekableByteChannel {
      */
     @Override
     public synchronized long position() throws IOException {
-        if (!this.open) throw new ClosedChannelException();
+        if (!this.open) {
+            throw new ClosedChannelException();
+        }
         return this.random.getFilePointer();
     }
 
@@ -105,20 +123,24 @@ public final class SeekableSMBByteChannel implements SeekableByteChannel {
      */
     @Override
     public synchronized long size() throws IOException {
-        if (!this.open) throw new ClosedChannelException();
+        if (!this.open) {
+            throw new ClosedChannelException();
+        }
         return this.random.length();
     }
 
     /**
      * Tries to reposition the pointer into the {@link SmbRandomAccessFile} that is handled by the current instance of {@link SeekableSMBByteChannel}
      *
-     * @param  newPosition New position within the file.
+     * @param newPosition New position within the file.
      * @return Current instance of {@link SeekableSMBByteChannel}.
      * @throws IOException If something goes wrong while trying to determine file size.
      */
     @Override
     public synchronized SeekableByteChannel position(long newPosition) throws IOException {
-        if (!this.open) throw new ClosedChannelException();
+        if (!this.open) {
+            throw new ClosedChannelException();
+        }
         this.random.seek(newPosition);
         return this;
     }
@@ -132,7 +154,9 @@ public final class SeekableSMBByteChannel implements SeekableByteChannel {
      */
     @Override
     public synchronized SeekableByteChannel truncate(long size) throws IOException {
-        if (!this.open) throw new ClosedChannelException();
+        if (!this.open) {
+            throw new ClosedChannelException();
+        }
         this.random.setLength(size);
         return this;
     }
@@ -155,7 +179,9 @@ public final class SeekableSMBByteChannel implements SeekableByteChannel {
      */
     @Override
     public synchronized void close() throws IOException {
-        if (!this.open) return;
+        if (!this.open) {
+            return;
+        }
         this.open = false;
         this.random.close();
     }

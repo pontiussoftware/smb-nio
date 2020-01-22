@@ -230,7 +230,7 @@ public class StandardSmbPoller extends AbstractSmbPoller {
         @Override
         public FileTime lastModifiedTime(Path path) {
             try {
-                final SMBFileAttributeView  attributeView = Files.getFileAttributeView(path, SMBFileAttributeView.class);
+                final SMBFileAttributeView attributeView = Files.getFileAttributeView(path, SMBFileAttributeView.class);
                 return attributeView.readAttributes().lastModifiedTime();
             } catch (IOException e) {
                 throw new RuntimeException("Failed to determine modification time of path: " + path, e);

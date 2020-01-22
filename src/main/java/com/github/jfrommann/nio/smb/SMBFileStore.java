@@ -12,22 +12,26 @@ import java.nio.file.attribute.FileStoreAttributeView;
 /**
  * This class represents a single SMB share on a specific {@link SMBFileSystem}. It provides access to basic attributes of that share.
  *
- * @author      Ralph Gasser
- * @version     1.0
- * @since       1.0
+ * @author Ralph Gasser
+ * @version 1.0
+ * @since 1.0
  */
 public final class SMBFileStore extends FileStore {
-    /** The {@link SMBFileSystem} this {@link SMBFileStore} belongs to. */
+    /**
+     * The {@link SMBFileSystem} this {@link SMBFileStore} belongs to.
+     */
     private final SMBFileSystem fileSystem;
 
-    /** The name of the share identified by this {@link SMBFileStore}. */
+    /**
+     * The name of the share identified by this {@link SMBFileStore}.
+     */
     private final String share;
 
     /**
      * Constructor for {@link SMBFileStore}.
      *
      * @param fileSystem The {@link SMBFileSystem} this instance of {@link SMBFileStore}.
-     * @param share The name of the share identified by the current instance of {@link SMBFileStore}.
+     * @param share      The name of the share identified by the current instance of {@link SMBFileStore}.
      */
     SMBFileStore(SMBFileSystem fileSystem, String share) {
         this.fileSystem = fileSystem;
@@ -69,12 +73,14 @@ public final class SMBFileStore extends FileStore {
     /**
      * Returns the total capacity of the share represented by this {@link SMBFileStore} instance.
      *
-     * @return  Total capacity of the share represented by this {@link SMBFileStore} instance
+     * @return Total capacity of the share represented by this {@link SMBFileStore} instance
      * @throws IOException If total capacity cannot be determined.
      */
     @Override
     public long getTotalSpace() throws IOException {
-        if (!this.fileSystem.isOpen()) throw new ClosedFileSystemException();
+        if (!this.fileSystem.isOpen()) {
+            throw new ClosedFileSystemException();
+        }
         return new SmbFile(this.name(), fileSystem.context()).length();
     }
 
@@ -87,7 +93,9 @@ public final class SMBFileStore extends FileStore {
      */
     @Override
     public long getUsableSpace() throws IOException {
-        if (!this.fileSystem.isOpen()) throw new ClosedFileSystemException();
+        if (!this.fileSystem.isOpen()) {
+            throw new ClosedFileSystemException();
+        }
         return new SmbFile(this.name(), fileSystem.context()).getDiskFreeSpace();
     }
 
@@ -100,7 +108,9 @@ public final class SMBFileStore extends FileStore {
      */
     @Override
     public long getUnallocatedSpace() throws IOException {
-        if (!this.fileSystem.isOpen()) throw new ClosedFileSystemException();
+        if (!this.fileSystem.isOpen()) {
+            throw new ClosedFileSystemException();
+        }
         return new SmbFile(this.name(), fileSystem.context()).getDiskFreeSpace();
     }
 
@@ -149,8 +159,12 @@ public final class SMBFileStore extends FileStore {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
         SMBFileStore that = (SMBFileStore) o;
 

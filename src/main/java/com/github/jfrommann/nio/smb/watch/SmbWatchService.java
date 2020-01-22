@@ -96,7 +96,7 @@ public class SmbWatchService implements WatchService {
 
     @Override
     public final void close() throws IOException {
-        synchronized(closeLock) {
+        synchronized (closeLock) {
             if (!closed) {
                 closed = true;
                 poller.close();

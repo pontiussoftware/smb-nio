@@ -5,7 +5,9 @@ import java.nio.file.PathMatcher;
 
 public final class SMBPathMatcher implements PathMatcher {
 
-    /** The RegEx pattern used to match the path. It does have a postfix qualifier! */
+    /**
+     * The RegEx pattern used to match the path. It does have a postfix qualifier!
+     */
     private final String pattern;
 
     /**
@@ -32,27 +34,28 @@ public final class SMBPathMatcher implements PathMatcher {
     private static String globToRegex(String globPattern) {
         globPattern = globPattern.trim();
         if (globPattern.endsWith("*")) {
-            globPattern = globPattern.substring(0, globPattern.length()-1);
+            globPattern = globPattern.substring(0, globPattern.length() - 1);
         }
         StringBuilder sb = new StringBuilder(globPattern.length());
 
         boolean escaping = false;
         int inCurlies = 0;
         for (char currentChar : globPattern.toCharArray()) {
-            switch (currentChar)
-            {
+            switch (currentChar) {
                 case '*':
-                    if (escaping)
+                    if (escaping) {
                         sb.append("\\*");
-                    else
+                    } else {
                         sb.append(".*");
+                    }
                     escaping = false;
                     break;
                 case '?':
-                    if (escaping)
+                    if (escaping) {
                         sb.append("\\?");
-                    else
+                    } else {
                         sb.append('.');
+                    }
                     escaping = false;
                     break;
                 case '.':
@@ -69,47 +72,41 @@ public final class SMBPathMatcher implements PathMatcher {
                     escaping = false;
                     break;
                 case '\\':
-                    if (escaping)
-                    {
+                    if (escaping) {
                         sb.append("\\\\");
                         escaping = false;
-                    }
-                    else
+                    } else {
                         escaping = true;
+                    }
                     break;
                 case '{':
-                    if (escaping)
-                    {
+                    if (escaping) {
                         sb.append("\\{");
-                    }
-                    else
-                    {
+                    } else {
                         sb.append('(');
                         inCurlies++;
                     }
                     escaping = false;
                     break;
                 case '}':
-                    if (inCurlies > 0 && !escaping)
-                    {
+                    if (inCurlies > 0 && !escaping) {
                         sb.append(')');
                         inCurlies--;
-                    }
-                    else if (escaping)
+                    } else if (escaping) {
                         sb.append("\\}");
-                    else
+                    } else {
                         sb.append("}");
+                    }
                     escaping = false;
                     break;
                 case ',':
-                    if (inCurlies > 0 && !escaping)
-                    {
+                    if (inCurlies > 0 && !escaping) {
                         sb.append('|');
-                    }
-                    else if (escaping)
+                    } else if (escaping) {
                         sb.append("\\,");
-                    else
+                    } else {
                         sb.append(",");
+                    }
                     break;
                 default:
                     escaping = false;

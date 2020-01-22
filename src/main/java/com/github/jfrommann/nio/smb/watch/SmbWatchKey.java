@@ -23,8 +23,7 @@ import java.util.Set;
 public class SmbWatchKey implements WatchKey {
 
     private enum State {
-        READY,
-        SIGNALLED
+        READY, SIGNALLED
     }
 
     static final int MAX_EVENT_LIST_SIZE = 512;
@@ -63,7 +62,7 @@ public class SmbWatchKey implements WatchKey {
 
     @Override
     public final List<WatchEvent<?>> pollEvents() {
-        synchronized(this) {
+        synchronized (this) {
             final List<WatchEvent<?>> currentEvents = events;
             events = new ArrayList<>();
             lastModifyEvents.clear();
@@ -73,7 +72,7 @@ public class SmbWatchKey implements WatchKey {
 
     @Override
     public final boolean reset() {
-        synchronized(this) {
+        synchronized (this) {
             if (state == SmbWatchKey.State.SIGNALLED && isValid()) {
                 if (events.isEmpty()) {
                     state = SmbWatchKey.State.READY;
@@ -101,7 +100,7 @@ public class SmbWatchKey implements WatchKey {
     public void signalEvent(WatchEvent.Kind<?> kind, Path path) {
         boolean modify = kind == StandardWatchEventKinds.ENTRY_MODIFY;
 
-        synchronized(this) {
+        synchronized (this) {
             final int size = events.size();
             if (size > 0) {
                 final WatchEvent<?> event = events.get(size - 1);
@@ -144,7 +143,7 @@ public class SmbWatchKey implements WatchKey {
     }
 
     private void signal() {
-        synchronized(this) {
+        synchronized (this) {
             if (state == SmbWatchKey.State.READY) {
                 state = SmbWatchKey.State.SIGNALLED;
                 watcher.enqueueKey(this);
