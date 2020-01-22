@@ -1,1 +1,1 @@
-com.github.jfrommann.nio.smb.SMBFileSystemProvider
+com.github.jfrommann.nio.smb.SmbFileSystemProvider

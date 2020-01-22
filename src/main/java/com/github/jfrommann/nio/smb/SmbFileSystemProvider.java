@@ -51,20 +51,20 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Ralph Gasser
  * @since 1.0
  */
-public final class SMBFileSystemProvider extends FileSystemProvider {
+public final class SmbFileSystemProvider extends FileSystemProvider {
 
     /**
-     * Key for the domain property in the env map {@link SMBFileSystemProvider#constructAuthority(URI, Map, CIFSContext)}.
+     * Key for the domain property in the env map {@link SmbFileSystemProvider#constructAuthority(URI, Map, CIFSContext)}.
      */
     public static final String PROPERTY_KEY_DOMAIN = "domain";
 
     /**
-     * Key for the username property in the env map {@link SMBFileSystemProvider#constructAuthority(URI, Map, CIFSContext)}.
+     * Key for the username property in the env map {@link SmbFileSystemProvider#constructAuthority(URI, Map, CIFSContext)}.
      */
     public static final String PROPERTY_KEY_USERNAME = "username";
 
     /**
-     * Key for the password property in the env map {@link SMBFileSystemProvider#constructAuthority(URI, Map, CIFSContext)}.
+     * Key for the password property in the env map {@link SmbFileSystemProvider#constructAuthority(URI, Map, CIFSContext)}.
      */
     public static final String PROPERTY_KEY_PASSWORD = "password";
 
@@ -83,17 +83,17 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
      */
     private static final String JCIFS_PROPERTY_KEY_PREFIX = "jcifs.";
 
-    private static SMBFileSystemProvider DEFAULT;
+    private static SmbFileSystemProvider DEFAULT;
 
     /**
-     * Local cache of {@link SMBFileSystem} instances.
+     * Local cache of {@link SmbFileSystem} instances.
      */
-    final Map<String, SMBFileSystem> fileSystemCache;
+    final Map<String, SmbFileSystem> fileSystemCache;
 
     /**
-     * Default constructor for {@link SMBFileSystemProvider}.
+     * Default constructor for {@link SmbFileSystemProvider}.
      */
-    public SMBFileSystemProvider() {
+    public SmbFileSystemProvider() {
         this.fileSystemCache = new ConcurrentHashMap<>();
     }
 
@@ -102,26 +102,26 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
      *
      * @return Default instance
      */
-    public static synchronized SMBFileSystemProvider getDefault() {
+    public static synchronized SmbFileSystemProvider getDefault() {
         if (DEFAULT == null) {
-            DEFAULT = new SMBFileSystemProvider();
+            DEFAULT = new SmbFileSystemProvider();
         }
         return DEFAULT;
     }
 
     /**
-     * Returns the default scheme for {@link SMBFileSystemProvider}.
+     * Returns the default scheme for {@link SmbFileSystemProvider}.
      *
      * @return URI Scheme - 'smb'
      */
     @Override
     public String getScheme() {
-        return SMBFileSystem.SMB_SCHEME;
+        return SmbFileSystem.SMB_SCHEME;
     }
 
     /**
-     * Creates a new {@link SMBFileSystem} instance for the provided URI. {@link SMBFileSystem} instances are cached based
-     * on the authority part of the URI (i.e. URI's with the same authority share the same {@link SMBFileSystem} instance).
+     * Creates a new {@link SmbFileSystem} instance for the provided URI. {@link SmbFileSystem} instances are cached based
+     * on the authority part of the URI (i.e. URI's with the same authority share the same {@link SmbFileSystem} instance).
      * <p>
      * Credentials for connecting with the SMB/CIFS server can be provided in several ways:
      *
@@ -134,14 +134,14 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
      * The above options will be considered according to precedence. That is, if the credentials are encoded in the URI those provided in
      * the env map or the jCIFS config will be ignored.
      *
-     * @param uri URI for which to create {@link SMBFileSystem}
+     * @param uri URI for which to create {@link SmbFileSystem}
      * @param env Map containing configuration parameters.
-     * @return Newly created {@link SMBFileSystem} instance
-     * @throws FileSystemAlreadyExistsException If an instance of {@link SMBFileSystem} already exists for provided URI.
+     * @return Newly created {@link SmbFileSystem} instance
+     * @throws FileSystemAlreadyExistsException If an instance of {@link SmbFileSystem} already exists for provided URI.
      * @throws IllegalArgumentException         If provided URI is not an SMB URI.
      */
     @Override
-    public SMBFileSystem newFileSystem(URI uri, Map<String, ?> env) {
+    public SmbFileSystem newFileSystem(URI uri, Map<String, ?> env) {
         SmbPoller smbPoller = null;
         if (MapUtils.isNotEmpty(env)) {
             if (MapUtils.getBooleanValue(env, PROPERTY_KEY_WATCHSERVICE_ENABLED, false)) {
@@ -153,8 +153,8 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
     }
 
     /**
-     * Creates a new {@link SMBFileSystem} instance for the provided URI. {@link SMBFileSystem} instances are cached based
-     * on the authority part of the URI (i.e. URI's with the same authority share the same {@link SMBFileSystem} instance).
+     * Creates a new {@link SmbFileSystem} instance for the provided URI. {@link SmbFileSystem} instances are cached based
+     * on the authority part of the URI (i.e. URI's with the same authority share the same {@link SmbFileSystem} instance).
      * <p>
      * Credentials for connecting with the SMB/CIFS server can be provided in several ways:
      *
@@ -167,15 +167,15 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
      * The above options will be considered according to precedence. That is, if the credentials are encoded in the URI those provided in
      * the env map or the jCIFS config will be ignored.
      *
-     * @param uri       URI for which to create {@link SMBFileSystem}
+     * @param uri       URI for which to create {@link SmbFileSystem}
      * @param env       Map containing configuration parameters.
      * @param smbPoller {@link SmbPoller} to create {@link SmbWatchService} from
-     * @return Newly created {@link SMBFileSystem} instance
-     * @throws FileSystemAlreadyExistsException If an instance of {@link SMBFileSystem} already exists for provided URI.
+     * @return Newly created {@link SmbFileSystem} instance
+     * @throws FileSystemAlreadyExistsException If an instance of {@link SmbFileSystem} already exists for provided URI.
      * @throws IllegalArgumentException         If provided URI is not an SMB URI.
      */
-    public SMBFileSystem newFileSystem(URI uri, Map<String, ?> env, SmbPoller smbPoller) {
-        if (!uri.getScheme().equals(SMBFileSystem.SMB_SCHEME)) {
+    public SmbFileSystem newFileSystem(URI uri, Map<String, ?> env, SmbPoller smbPoller) {
+        if (!uri.getScheme().equals(SmbFileSystem.SMB_SCHEME)) {
             throw new IllegalArgumentException("The provided URI is not an SMB URI.");
         }
 
@@ -189,7 +189,7 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
             if (this.fileSystemCache.containsKey(authority)) {
                 throw new FileSystemAlreadyExistsException("Filesystem for the provided server 'smb://" + authority + "' does already exist.");
             }
-            final SMBFileSystem system = new SMBFileSystem(this, authority, context, smbPoller);
+            final SmbFileSystem system = new SmbFileSystem(this, authority, context, smbPoller);
             this.fileSystemCache.put(authority, system);
             return system;
         } catch (UnsupportedEncodingException e) {
@@ -200,18 +200,18 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
     }
 
     /**
-     * Retrieves a {@link SMBFileSystem} instance for the provided URI from fileSystemCache or creates a new one if it is missing.
-     * {@link SMBFileSystem} instances are cached based on the authority part of the URI (i.e. URI's with the same authority share the same
-     * {@link SMBFileSystem} instance).
+     * Retrieves a {@link SmbFileSystem} instance for the provided URI from fileSystemCache or creates a new one if it is missing.
+     * {@link SmbFileSystem} instances are cached based on the authority part of the URI (i.e. URI's with the same authority share the same
+     * {@link SmbFileSystem} instance).
      *
-     * @param uri URI for which to fetch {@link SMBFileSystem}
+     * @param uri URI for which to fetch {@link SmbFileSystem}
      * @param env Map containing configuration parameters.
-     * @return {@link SMBFileSystem} instance
-     * @throws FileSystemNotFoundException If no instance of {@link SMBFileSystem} could be retrieved from fileSystemCache.
+     * @return {@link SmbFileSystem} instance
+     * @throws FileSystemNotFoundException If no instance of {@link SmbFileSystem} could be retrieved from fileSystemCache.
      * @throws IllegalArgumentException    If provided URI is not an SMB URI.
      */
-    public SMBFileSystem getOrCreateFileSystem(URI uri, Map<String, ?> env) {
-        if (!uri.getScheme().equals(SMBFileSystem.SMB_SCHEME)) {
+    public SmbFileSystem getOrCreateFileSystem(URI uri, Map<String, ?> env) {
+        if (!uri.getScheme().equals(SmbFileSystem.SMB_SCHEME)) {
             throw new IllegalArgumentException("The provided URI is not an SMB URI.");
         }
 
@@ -264,17 +264,17 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
     }
 
     /**
-     * Retrieves a {@link SMBFileSystem} instance for the provided URI from fileSystemCache and returns it. {@link SMBFileSystem} instances
-     * are cached based on the authority part of the URI (i.e. URI's with the same authority share the same {@link SMBFileSystem} instance).
+     * Retrieves a {@link SmbFileSystem} instance for the provided URI from fileSystemCache and returns it. {@link SmbFileSystem} instances
+     * are cached based on the authority part of the URI (i.e. URI's with the same authority share the same {@link SmbFileSystem} instance).
      *
-     * @param uri URI for which to fetch {@link SMBFileSystem}
-     * @return {@link SMBFileSystem} instance
-     * @throws FileSystemNotFoundException If no instance of {@link SMBFileSystem} could be retrieved from fileSystemCache.
+     * @param uri URI for which to fetch {@link SmbFileSystem}
+     * @return {@link SmbFileSystem} instance
+     * @throws FileSystemNotFoundException If no instance of {@link SmbFileSystem} could be retrieved from fileSystemCache.
      * @throws IllegalArgumentException    If provided URI is not an SMB URI.
      */
     @Override
-    public SMBFileSystem getFileSystem(URI uri) {
-        if (!uri.getScheme().equals(SMBFileSystem.SMB_SCHEME)) {
+    public SmbFileSystem getFileSystem(URI uri) {
+        if (!uri.getScheme().equals(SmbFileSystem.SMB_SCHEME)) {
             throw new IllegalArgumentException("The provided URI is not an SMB URI.");
         }
 
@@ -294,16 +294,16 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
     }
 
     /**
-     * Converts the provided URI to an {@link SMBPath} instance and returns it. Automatically links the {@link SMBPath}
-     * with the {@link SMBFileSystem} associated with its authority.
+     * Converts the provided URI to an {@link SmbPath} instance and returns it. Automatically links the {@link SmbPath}
+     * with the {@link SmbFileSystem} associated with its authority.
      *
-     * @param uri The URI from which to create the {@link SMBPath}
-     * @return Newly created {@link SMBPath}.
+     * @param uri The URI from which to create the {@link SmbPath}
+     * @return Newly created {@link SmbPath}.
      * @throws IllegalArgumentException If URI is not an SMB URI.
      */
     @Override
-    public SMBPath getPath(URI uri) {
-        if (!uri.getScheme().equals(SMBFileSystem.SMB_SCHEME)) {
+    public SmbPath getPath(URI uri) {
+        if (!uri.getScheme().equals(SmbFileSystem.SMB_SCHEME)) {
             throw new IllegalArgumentException("The provided URI is not an SMB URI.");
         }
 
@@ -313,9 +313,9 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
 
             /* Lookup authority string to determine, whether a new SMBFileSystem is required. */
             if (this.fileSystemCache.containsKey(authority)) {
-                return new SMBPath(this.getFileSystem(uri), uri);
+                return new SmbPath(this.getFileSystem(uri), uri);
             } else {
-                return new SMBPath(this.newFileSystem(uri, new HashMap<>()), uri);
+                return new SmbPath(this.newFileSystem(uri, new HashMap<>()), uri);
             }
         } catch (UnsupportedEncodingException e) {
             throw new IllegalArgumentException("Failed to URL encode the username and/or password in provided URI.", e);
@@ -323,20 +323,20 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
     }
 
     /**
-     * Creates and returns a new {@link SeekableSMBByteChannel} instance.
+     * Creates and returns a new {@link SeekableSmbByteChannel} instance.
      *
-     * @param path    The {@link SMBPath} for which a byte channel should be opened.
+     * @param path    The {@link SmbPath} for which a byte channel should be opened.
      * @param options A set of {@link StandardOpenOption}s.
      * @param attrs   An optional list of file attributes to set when creating the file.
-     * @return An instance of {@link SeekableSMBByteChannel}.
-     * @throws IllegalArgumentException      If provided path is not an {@link SMBPath} instance.
+     * @return An instance of {@link SeekableSmbByteChannel}.
+     * @throws IllegalArgumentException      If provided path is not an {@link SmbPath} instance.
      * @throws IOException                   If an I/O error occurs
      * @throws UnsupportedOperationException If an unsupported open option is specified (DSYNC, SYNC or SPARSE)
      */
     @Override
     public SeekableByteChannel newByteChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs) throws IOException {
         /* Convert path and instantiate SmbFile. */
-        final SMBPath smbPath = SMBPath.fromPath(path);
+        final SmbPath smbPath = SmbPath.fromPath(path);
         final SmbFile file = smbPath.getSmbFile();
 
         /* Determines how the SeekableByteChannel should be setup. */
@@ -364,127 +364,127 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
         }
 
         /* Returns a new SeekableSMBByteChannel object. */
-        return new SeekableSMBByteChannel(file, write, create, create_new, truncate, append);
+        return new SeekableSmbByteChannel(file, write, create, create_new, truncate, append);
     }
 
     /**
-     * Creates and returns a new {@link SMBDirectoryStream} for the specified path.
+     * Creates and returns a new {@link SmbDirectoryStream} for the specified path.
      *
-     * @param dir    The {@link SMBPath} for which to create a new DirectoryStream.
+     * @param dir    The {@link SmbPath} for which to create a new DirectoryStream.
      * @param filter An optional filter that should be applied to filter entries in the stream.
-     * @return An instance of {@link SMBDirectoryStream}.
-     * @throws IllegalArgumentException If provided path is not an {@link SMBPath} instance.
-     * @throws NotDirectoryException    If provided {@link SMBPath} does not point to a directory
+     * @return An instance of {@link SmbDirectoryStream}.
+     * @throws IllegalArgumentException If provided path is not an {@link SmbPath} instance.
+     * @throws NotDirectoryException    If provided {@link SmbPath} does not point to a directory
      * @throws IOException              If an I/O error occurs
      */
     @Override
     public DirectoryStream<Path> newDirectoryStream(Path dir, DirectoryStream.Filter<? super Path> filter) throws IOException {
-        return new SMBDirectoryStream(SMBPath.fromPath(dir), filter);
+        return new SmbDirectoryStream(SmbPath.fromPath(dir), filter);
     }
 
     /**
-     * Creates a directory under the provided {@link SMBPath}
+     * Creates a directory under the provided {@link SmbPath}
      *
-     * @param dir {@link SMBPath} to folder that should be created.
-     * @throws IllegalArgumentException If provided path is not an {@link SMBPath} instance.
+     * @param dir {@link SmbPath} to folder that should be created.
+     * @throws IllegalArgumentException If provided path is not an {@link SmbPath} instance.
      * @throws IOException              If creating the folder fails for some reason.
      */
     @Override
     public void createDirectory(Path dir, FileAttribute<?>... attrs) throws IOException {
-        SmbFile smbFile = SMBPath.fromPath(dir).getSmbFile();
+        SmbFile smbFile = SmbPath.fromPath(dir).getSmbFile();
         smbFile.mkdir();
     }
 
     /**
-     * Deletes the file under the provided {@link SMBPath}
+     * Deletes the file under the provided {@link SmbPath}
      *
-     * @param path {@link SMBPath} to file that should be deleted.
-     * @throws IllegalArgumentException If provided path is not an {@link SMBPath} instance.
+     * @param path {@link SmbPath} to file that should be deleted.
+     * @throws IllegalArgumentException If provided path is not an {@link SmbPath} instance.
      * @throws IOException              If deleting the file fails for some reason.
      */
     @Override
     public void delete(Path path) throws IOException {
-        SmbFile smbFile = SMBPath.fromPath(path).getSmbFile();
+        SmbFile smbFile = SmbPath.fromPath(path).getSmbFile();
         smbFile.delete();
     }
 
     /**
-     * Copies the file under provided source {@link SMBPath} to the destination {@link SMBPath}.
+     * Copies the file under provided source {@link SmbPath} to the destination {@link SmbPath}.
      * CopyOptions are ignored!
      *
-     * @param source  Source {@link SMBPath}
-     * @param target  Destination {@link SMBPath}
+     * @param source  Source {@link SmbPath}
+     * @param target  Destination {@link SmbPath}
      * @param options CopyOptions (no effect)
-     * @throws IllegalArgumentException If provided paths are not {@link SMBPath} instances.
+     * @throws IllegalArgumentException If provided paths are not {@link SmbPath} instances.
      * @throws IOException              If copying fails for some reason.
      */
     @Override
     public void copy(Path source, Path target, CopyOption... options) throws IOException {
-        SmbFile fromFile = SMBPath.fromPath(source).getSmbFile();
-        SmbFile toFile = SMBPath.fromPath(target).getSmbFile();
+        SmbFile fromFile = SmbPath.fromPath(source).getSmbFile();
+        SmbFile toFile = SmbPath.fromPath(target).getSmbFile();
         fromFile.copyTo(toFile);
     }
 
     /**
-     * Moves the file under the provided source {@link SMBPath} to the destination {@link SMBPath}.
+     * Moves the file under the provided source {@link SmbPath} to the destination {@link SmbPath}.
      * CopyOptions are ignored!
      *
-     * @param source  Source {@link SMBPath}
-     * @param target  Destination {@link SMBPath}
+     * @param source  Source {@link SmbPath}
+     * @param target  Destination {@link SmbPath}
      * @param options CopyOptions (no effect)
-     * @throws IllegalArgumentException If provided paths are not {@link SMBPath} instances.
+     * @throws IllegalArgumentException If provided paths are not {@link SmbPath} instances.
      * @throws IOException              If moving fails for some reason.
      */
     @Override
     public void move(Path source, Path target, CopyOption... options) throws IOException {
-        SmbFile fromFile = SMBPath.fromPath(source).getSmbFile();
-        SmbFile toFile = SMBPath.fromPath(target).getSmbFile();
+        SmbFile fromFile = SmbPath.fromPath(source).getSmbFile();
+        SmbFile toFile = SmbPath.fromPath(target).getSmbFile();
         fromFile.renameTo(toFile);
     }
 
     /**
-     * Returns true, if the resources specified by the two {@link SMBPath} instance are the same.
+     * Returns true, if the resources specified by the two {@link SmbPath} instance are the same.
      *
-     * @param path1 First {@link SMBPath}
-     * @param path2 Second {@link SMBPath}
+     * @param path1 First {@link SmbPath}
+     * @param path2 Second {@link SmbPath}
      * @return True if the two paths point to the same resource.
-     * @throws IllegalArgumentException If provided paths are not {@link SMBPath} instances.
+     * @throws IllegalArgumentException If provided paths are not {@link SmbPath} instances.
      * @throws IOException              If moving fails for some reason.
      */
     @Override
     public boolean isSameFile(Path path1, Path path2) throws IOException {
-        SmbFile smbFile1 = SMBPath.fromPath(path1).getSmbFile();
-        SmbFile smbFile2 = SMBPath.fromPath(path2).getSmbFile();
+        SmbFile smbFile1 = SmbPath.fromPath(path1).getSmbFile();
+        SmbFile smbFile2 = SmbPath.fromPath(path2).getSmbFile();
         return smbFile1.equals(smbFile2);
     }
 
     /**
-     * Returns true, if the resource specified by the provided {@link SMBPath} instance is hidden..
+     * Returns true, if the resource specified by the provided {@link SmbPath} instance is hidden..
      *
-     * @param path {@link SMBPath} that should be checked.
-     * @return True if the resource under {@link SMBPath} is hidden.
-     * @throws IllegalArgumentException If provided paths are not {@link SMBPath} instances.
+     * @param path {@link SmbPath} that should be checked.
+     * @return True if the resource under {@link SmbPath} is hidden.
+     * @throws IllegalArgumentException If provided paths are not {@link SmbPath} instances.
      * @throws IOException              If moving fails for some reason.
      */
     @Override
     public boolean isHidden(Path path) throws IOException {
-        SmbFile smbFile = SMBPath.fromPath(path).getSmbFile();
+        SmbFile smbFile = SmbPath.fromPath(path).getSmbFile();
         return smbFile.isHidden();
     }
 
     /**
-     * Checks access to file under the provided {@link SMBPath}.
+     * Checks access to file under the provided {@link SmbPath}.
      *
-     * @param path  {@link SMBPath} for which access should be checked.
+     * @param path  {@link SmbPath} for which access should be checked.
      * @param modes AccessModes that should be checked. Onl yREAD and WRITE are supported.
-     * @throws NoSuchFileException      If file or folder specified by {@link SMBPath} does not exist.
-     * @throws AccessDeniedException    If requested access cannot be provided for file or folder under {@link SMBPath}.
-     * @throws IllegalArgumentException If provided path is not a {@link SMBPath} instance.
+     * @throws NoSuchFileException      If file or folder specified by {@link SmbPath} does not exist.
+     * @throws AccessDeniedException    If requested access cannot be provided for file or folder under {@link SmbPath}.
+     * @throws IllegalArgumentException If provided path is not a {@link SmbPath} instance.
      * @throws IOException              If checking accessfails for some reason.
      */
     @Override
     public void checkAccess(Path path, AccessMode... modes) throws IOException {
-        SmbFile smbFile = SMBPath.fromPath(path).getSmbFile();
+        SmbFile smbFile = SmbPath.fromPath(path).getSmbFile();
 
         /* First check if file exists. */
         if (!smbFile.exists()) {
@@ -513,43 +513,43 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
     }
 
     /**
-     * Reads the file attributes view of the file under the provided {@link SMBPath} and returns it. LinkOption will be ignored as
+     * Reads the file attributes view of the file under the provided {@link SmbPath} and returns it. LinkOption will be ignored as
      * the SMB filesystem does not support symlinks.
      *
-     * @param path    {@link SMBPath} for which attributes view should be created.
-     * @param type    Class of the attributes view. Must be either {@link BasicFileAttributeView} or {@link SMBFileAttributeView}
+     * @param path    {@link SmbPath} for which attributes view should be created.
+     * @param type    Class of the attributes view. Must be either {@link BasicFileAttributeView} or {@link SmbFileAttributeView}
      * @param options LinkOptions; will be ignored.
      * @param <V>     Type of the class that's being returned.
-     * @return {@link SMBFileAttributeView}
-     * @throws IllegalArgumentException If provided paths is not a {@link SMBPath} instance.
+     * @return {@link SmbFileAttributeView}
+     * @throws IllegalArgumentException If provided paths is not a {@link SmbPath} instance.
      */
     @Override
     @SuppressWarnings("unchecked")
     public <V extends FileAttributeView> V getFileAttributeView(Path path, Class<V> type, LinkOption... options) {
-        if (type == BasicFileAttributeView.class || type == SMBFileAttributeView.class) {
-            return (V) (new SMBFileAttributeView(SMBPath.fromPath(path)));
+        if (type == BasicFileAttributeView.class || type == SmbFileAttributeView.class) {
+            return (V) (new SmbFileAttributeView(SmbPath.fromPath(path)));
         } else {
             return null;
         }
     }
 
     /**
-     * Reads the file attributes of the file under the provided {@link SMBPath} and returns it.  LinkOption will be ignored as
+     * Reads the file attributes of the file under the provided {@link SmbPath} and returns it.  LinkOption will be ignored as
      * the SMB filesystem does not support symlinks.
      *
-     * @param path    {@link SMBPath} for which attributes should be read.
-     * @param type    Class of the attribute. Must be either {@link BasicFileAttributes} or {@link SMBFileAttributes}
+     * @param path    {@link SmbPath} for which attributes should be read.
+     * @param type    Class of the attribute. Must be either {@link BasicFileAttributes} or {@link SmbFileAttributes}
      * @param options LinkOptions; will be ignored.
      * @param <A>     Type of the class that's being returned.
-     * @return {@link SMBFileAttributes}
-     * @throws IllegalArgumentException If provided paths is not a {@link SMBPath} instance.
+     * @return {@link SmbFileAttributes}
+     * @throws IllegalArgumentException If provided paths is not a {@link SmbPath} instance.
      * @throws IOException              If reading attributes fails for some reason.
      */
     @Override
     @SuppressWarnings("unchecked")
     public <A extends BasicFileAttributes> A readAttributes(Path path, Class<A> type, LinkOption... options) throws IOException {
-        if (type == BasicFileAttributes.class || type == SMBFileAttributes.class) {
-            return (A) (new SMBFileAttributes(SMBPath.fromPath(path).getSmbFile()));
+        if (type == BasicFileAttributes.class || type == SmbFileAttributes.class) {
+            return (A) (new SmbFileAttributes(SmbPath.fromPath(path).getSmbFile()));
         } else {
             return null;
         }
@@ -590,7 +590,7 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
         String authority;
 
         /* Check if URI encodes credentials. Credentials are used in the following order: */
-        if (uri.getAuthority().contains(SMBFileSystem.CREDENTIALS_SEPARATOR)) {
+        if (uri.getAuthority().contains(SmbFileSystem.CREDENTIALS_SEPARATOR)) {
             authority = uri.getAuthority();
         } else {
             final StringBuilder builder = new StringBuilder();
@@ -622,7 +622,7 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
             }
 
             if (builder.length() > 0) {
-                builder.append(SMBFileSystem.CREDENTIALS_SEPARATOR).append(uri.getAuthority());
+                builder.append(SmbFileSystem.CREDENTIALS_SEPARATOR).append(uri.getAuthority());
                 authority = builder.toString();
             } else {
                 authority = uri.getAuthority();

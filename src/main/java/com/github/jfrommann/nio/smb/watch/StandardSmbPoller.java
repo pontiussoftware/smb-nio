@@ -1,6 +1,6 @@
 package com.github.jfrommann.nio.smb.watch;
 
-import com.github.jfrommann.nio.smb.SMBFileAttributeView;
+import com.github.jfrommann.nio.smb.SmbFileAttributeView;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -230,7 +230,7 @@ public class StandardSmbPoller extends AbstractSmbPoller {
         @Override
         public FileTime lastModifiedTime(Path path) {
             try {
-                final SMBFileAttributeView attributeView = Files.getFileAttributeView(path, SMBFileAttributeView.class);
+                final SmbFileAttributeView attributeView = Files.getFileAttributeView(path, SmbFileAttributeView.class);
                 return attributeView.readAttributes().lastModifiedTime();
             } catch (IOException e) {
                 throw new RuntimeException("Failed to determine modification time of path: " + path, e);

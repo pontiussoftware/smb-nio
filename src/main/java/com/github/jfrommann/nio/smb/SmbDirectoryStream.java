@@ -11,31 +11,31 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public final class SMBDirectoryStream implements DirectoryStream<Path> {
+public final class SmbDirectoryStream implements DirectoryStream<Path> {
     /**
-     * Array containing the content of the directory handled by the current instance of {@link SMBDirectoryStream}. This array is eagerly populated upon construction.
+     * Array containing the content of the directory handled by the current instance of {@link SmbDirectoryStream}. This array is eagerly populated upon construction.
      */
     private final ArrayList<Path> content;
 
     /**
-     * Flag indicating whether the current instance of {@link SMBDirectoryStream} has been closed.
+     * Flag indicating whether the current instance of {@link SmbDirectoryStream} has been closed.
      */
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
     /**
-     * Flag indicating whether an iterator has already been returned by the current instance of {@link SMBDirectoryStream}.
+     * Flag indicating whether an iterator has already been returned by the current instance of {@link SmbDirectoryStream}.
      */
     private final AtomicBoolean iteratorReturned = new AtomicBoolean();
 
     /**
-     * Public and internal constructor for {@link SMBDirectoryStream}.
+     * Public and internal constructor for {@link SmbDirectoryStream}.
      *
-     * @param smbPath The {@link SMBPath} for which to open a directory stream.
+     * @param smbPath The {@link SmbPath} for which to open a directory stream.
      * @param filter  An optional filter predicate.
-     * @throws NotDirectoryException If provided {@link SMBPath} does not point to a directory.
+     * @throws NotDirectoryException If provided {@link SmbPath} does not point to a directory.
      * @throws IOException           If something goes wrong while reading the content of the directory.
      */
-    public SMBDirectoryStream(SMBPath smbPath, java.nio.file.DirectoryStream.Filter<? super Path> filter) throws IOException {
+    public SmbDirectoryStream(SmbPath smbPath, java.nio.file.DirectoryStream.Filter<? super Path> filter) throws IOException {
         if (!smbPath.getSmbFile().isDirectory()) {
             throw new NotDirectoryException("The provided path '" + smbPath.toString() + "' is not a directory.");
         }
@@ -49,9 +49,9 @@ public final class SMBDirectoryStream implements DirectoryStream<Path> {
     }
 
     /**
-     * Returns an iterator for content of the directory handled by the current instance of {@link SMBDirectoryStream}.
+     * Returns an iterator for content of the directory handled by the current instance of {@link SmbDirectoryStream}.
      *
-     * @return Iterator containing the content of the directory handled by the current instance of {@link SMBDirectoryStream}
+     * @return Iterator containing the content of the directory handled by the current instance of {@link SmbDirectoryStream}
      */
     @Override
     public Iterator<Path> iterator() {
@@ -76,7 +76,7 @@ public final class SMBDirectoryStream implements DirectoryStream<Path> {
     }
 
     /**
-     * Closes the current instance of {@link SMBDirectoryStream}.
+     * Closes the current instance of {@link SmbDirectoryStream}.
      */
     @Override
     public void close() {

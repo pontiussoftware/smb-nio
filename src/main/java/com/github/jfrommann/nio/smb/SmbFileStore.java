@@ -10,47 +10,45 @@ import java.nio.file.attribute.FileAttributeView;
 import java.nio.file.attribute.FileStoreAttributeView;
 
 /**
- * This class represents a single SMB share on a specific {@link SMBFileSystem}. It provides access to basic attributes of that share.
+ * This class represents a single SMB share on a specific {@link SmbFileSystem}. It provides access to basic attributes of that share.
  *
  * @author Ralph Gasser
- * @version 1.0
- * @since 1.0
  */
-public final class SMBFileStore extends FileStore {
+public final class SmbFileStore extends FileStore {
     /**
-     * The {@link SMBFileSystem} this {@link SMBFileStore} belongs to.
+     * The {@link SmbFileSystem} this {@link SmbFileStore} belongs to.
      */
-    private final SMBFileSystem fileSystem;
+    private final SmbFileSystem fileSystem;
 
     /**
-     * The name of the share identified by this {@link SMBFileStore}.
+     * The name of the share identified by this {@link SmbFileStore}.
      */
     private final String share;
 
     /**
-     * Constructor for {@link SMBFileStore}.
+     * Constructor for {@link SmbFileStore}.
      *
-     * @param fileSystem The {@link SMBFileSystem} this instance of {@link SMBFileStore}.
-     * @param share      The name of the share identified by the current instance of {@link SMBFileStore}.
+     * @param fileSystem The {@link SmbFileSystem} this instance of {@link SmbFileStore}.
+     * @param share      The name of the share identified by the current instance of {@link SmbFileStore}.
      */
-    SMBFileStore(SMBFileSystem fileSystem, String share) {
+    SmbFileStore(SmbFileSystem fileSystem, String share) {
         this.fileSystem = fileSystem;
         this.share = share;
     }
 
     /**
-     * Returns the full name of this {@link SMBFileStore}, which includes the FQN of the {@link SMBFileSystem}
+     * Returns the full name of this {@link SmbFileStore}, which includes the FQN of the {@link SmbFileSystem}
      * and the name of the associated share.
      *
-     * @return Full name of {@link SMBFileStore}
+     * @return Full name of {@link SmbFileStore}
      */
     @Override
     public String name() {
-        return this.fileSystem.getFQN() + SMBFileSystem.PATH_SEPARATOR + this.share;
+        return this.fileSystem.getFQN() + SmbFileSystem.PATH_SEPARATOR + this.share;
     }
 
     /**
-     * Returns the type of the {@link SMBFileStore}, which is "share".
+     * Returns the type of the {@link SmbFileStore}, which is "share".
      *
      * @return "share"
      */
@@ -60,7 +58,7 @@ public final class SMBFileStore extends FileStore {
     }
 
     /**
-     * Returns false because generally, {@link SMBFileStore}'s are not considered to be read-only. However,
+     * Returns false because generally, {@link SmbFileStore}'s are not considered to be read-only. However,
      * the concrete access permissions are specific to a file or resource.
      *
      * @return false
@@ -71,9 +69,9 @@ public final class SMBFileStore extends FileStore {
     }
 
     /**
-     * Returns the total capacity of the share represented by this {@link SMBFileStore} instance.
+     * Returns the total capacity of the share represented by this {@link SmbFileStore} instance.
      *
-     * @return Total capacity of the share represented by this {@link SMBFileStore} instance
+     * @return Total capacity of the share represented by this {@link SmbFileStore} instance
      * @throws IOException If total capacity cannot be determined.
      */
     @Override
@@ -85,8 +83,8 @@ public final class SMBFileStore extends FileStore {
     }
 
     /**
-     * Returns the number of bytes that are currently available on the share represented by this {@link SMBFileStore} instance. The
-     * value returned by this method is always the same as {@link SMBFileStore#getUnallocatedSpace()}
+     * Returns the number of bytes that are currently available on the share represented by this {@link SmbFileStore} instance. The
+     * value returned by this method is always the same as {@link SmbFileStore#getUnallocatedSpace()}
      *
      * @return Number of bytes currently available.
      * @throws IOException If usable space cannot be determined.
@@ -100,8 +98,8 @@ public final class SMBFileStore extends FileStore {
     }
 
     /**
-     * Returns the number of bytes that are currently available on the share represented by this {@link SMBFileStore} instance. The
-     * value returned by this method is always the same as {@link SMBFileStore#getUsableSpace()}
+     * Returns the number of bytes that are currently available on the share represented by this {@link SmbFileStore} instance. The
+     * value returned by this method is always the same as {@link SmbFileStore#getUsableSpace()}
      *
      * @return Number of bytes currently available.
      * @throws IOException If usable space cannot be determined.
@@ -115,18 +113,18 @@ public final class SMBFileStore extends FileStore {
     }
 
     /**
-     * Checks whether or not this {@link SMBFileStore} supports the file attributes identified by the given file attribute view.
+     * Checks whether or not this {@link SmbFileStore} supports the file attributes identified by the given file attribute view.
      *
      * @param type The type of the {@link FileAttributeView} for which support should be verified.
      * @return True if {@link FileAttributeView} is supported, false otherwise.
      */
     @Override
     public boolean supportsFileAttributeView(Class<? extends FileAttributeView> type) {
-        return (type.equals(BasicFileAttributeView.class) || type.equals(SMBFileAttributeView.class));
+        return (type.equals(BasicFileAttributeView.class) || type.equals(SmbFileAttributeView.class));
     }
 
     /**
-     * Checks whether or not this {@link SMBFileStore} supports the file attributes identified by the given file attribute view.
+     * Checks whether or not this {@link SmbFileStore} supports the file attributes identified by the given file attribute view.
      *
      * @param name Name of the {@link FileAttributeView} for which support should be verified.
      * @return True if {@link FileAttributeView} is supported, false otherwise.
@@ -166,7 +164,7 @@ public final class SMBFileStore extends FileStore {
             return false;
         }
 
-        SMBFileStore that = (SMBFileStore) o;
+        SmbFileStore that = (SmbFileStore) o;
 
         return fileSystem.equals(that.fileSystem) && share.equals(that.share);
     }

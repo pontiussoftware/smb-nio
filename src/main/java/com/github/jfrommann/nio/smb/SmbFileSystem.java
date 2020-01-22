@@ -23,16 +23,15 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * This class represents a single SMB server (filesystem). The authority part of the SMB URI creates a unique {@link SMBFileSystem}, that is,
- * if you connect to the same server with different credentials, it will results in two distinc {@link SMBFileSystem} instances. Furthermore,
- * different names for the same server will result in different {@link SMBFileSystem} instances too.
+ * This class represents a single SMB server (filesystem). The authority part of the SMB URI creates a unique {@link SmbFileSystem}, that is,
+ * if you connect to the same server with different credentials, it will results in two distinc {@link SmbFileSystem} instances. Furthermore,
+ * different names for the same server will result in different {@link SmbFileSystem} instances too.
  * <p>
- * The {@link SMBFileSystem} is the factory for several types of objects, like {@link SMBPath}, {@link SMBFileStore} etc.
+ * The {@link SmbFileSystem} is the factory for several types of objects, like {@link SmbPath}, {@link SmbFileStore} etc.
  *
  * @author Ralph Gasser
- * @since 1.0
  */
-public final class SMBFileSystem extends FileSystem {
+public final class SmbFileSystem extends FileSystem {
     /**
      * Default separator between path components.
      */
@@ -63,14 +62,14 @@ public final class SMBFileSystem extends FileSystem {
     }
 
     /**
-     * The URI for which the {@link SMBFileSystem} was created.
+     * The URI for which the {@link SmbFileSystem} was created.
      */
     private final String identifier;
 
     /**
-     * The {@link SMBFileSystemProvider} instance this {@link SMBFileSystem} belongs to.
+     * The {@link SmbFileSystemProvider} instance this {@link SmbFileSystem} belongs to.
      */
-    private final SMBFileSystemProvider provider;
+    private final SmbFileSystemProvider provider;
 
     private final CIFSContext context;
 
@@ -80,36 +79,36 @@ public final class SMBFileSystem extends FileSystem {
     private SmbPoller smbPoller;
 
     /**
-     * Constructor for {@link SMBFileSystem}.
+     * Constructor for {@link SmbFileSystem}.
      *
-     * @param provider  The {@link SMBFileSystemProvider} instance associated with this {@link SMBFileSystem}.
-     * @param authority The identifier of the {@link SMBFileSystem}; usually defaults to the URI's authority part.
+     * @param provider  The {@link SmbFileSystemProvider} instance associated with this {@link SmbFileSystem}.
+     * @param authority The identifier of the {@link SmbFileSystem}; usually defaults to the URI's authority part.
      */
-    SMBFileSystem(SMBFileSystemProvider provider, String authority, CIFSContext context) {
+    SmbFileSystem(SmbFileSystemProvider provider, String authority, CIFSContext context) {
         this.identifier = authority;
         this.provider = provider;
         this.context = context;
     }
 
     /**
-     * Constructor for {@link SMBFileSystem}.
+     * Constructor for {@link SmbFileSystem}.
      *
-     * @param provider  The {@link SMBFileSystemProvider} instance associated with this {@link SMBFileSystem}.
-     * @param authority The identifier of the {@link SMBFileSystem}; usually defaults to the URI's authority part.
+     * @param provider  The {@link SmbFileSystemProvider} instance associated with this {@link SmbFileSystem}.
+     * @param authority The identifier of the {@link SmbFileSystem}; usually defaults to the URI's authority part.
      * @param smbPoller Optional {@link SmbPoller} to create {@link SmbWatchService} from.
      */
-    SMBFileSystem(SMBFileSystemProvider provider, String authority, CIFSContext context, SmbPoller smbPoller) {
+    SmbFileSystem(SmbFileSystemProvider provider, String authority, CIFSContext context, SmbPoller smbPoller) {
         this(provider, authority, context);
         this.smbPoller = smbPoller;
     }
 
     /**
-     * Returns instance of {@link SMBFileSystemProvider} this {@link SMBFileSystem} belongs to.
+     * Returns instance of {@link SmbFileSystemProvider} this {@link SmbFileSystem} belongs to.
      *
-     * @return {@link SMBFileSystemProvider}
+     * @return {@link SmbFileSystemProvider}
      */
     @Override
-    public SMBFileSystemProvider provider() {
+    public SmbFileSystemProvider provider() {
         return provider;
     }
 
@@ -123,10 +122,10 @@ public final class SMBFileSystem extends FileSystem {
     }
 
     /**
-     * Removes the current instance of {@link SMBFileSystem} from the {@link SMBFileSystemProvider}'s cache. Calling this method will
+     * Removes the current instance of {@link SmbFileSystem} from the {@link SmbFileSystemProvider}'s cache. Calling this method will
      * not actually close any underlying resource.
      * <p>
-     * However, existing paths pointing to the current instance of {@link SMBFileSystem} will not be handled to the
+     * However, existing paths pointing to the current instance of {@link SmbFileSystem} will not be handled to the
      */
     @Override
     public void close() {
@@ -134,9 +133,9 @@ public final class SMBFileSystem extends FileSystem {
     }
 
     /**
-     * Returns true, if the current {@link SMBFileSystem} is still known to the {@link SMBFileSystemProvider}.
+     * Returns true, if the current {@link SmbFileSystem} is still known to the {@link SmbFileSystemProvider}.
      *
-     * @return If current {@link SMBFileSystem} is still open.
+     * @return If current {@link SmbFileSystem} is still open.
      */
     @Override
     public boolean isOpen() {
@@ -144,7 +143,7 @@ public final class SMBFileSystem extends FileSystem {
     }
 
     /**
-     * Returns false because generally, {@link SMBFileSystem}'s are not considered to be read-only. However,
+     * Returns false because generally, {@link SmbFileSystem}'s are not considered to be read-only. However,
      * the concrete access permissions are specific to a file or resource.
      *
      * @return false
@@ -164,13 +163,13 @@ public final class SMBFileSystem extends FileSystem {
      */
     @Override
     public String getSeparator() {
-        return SMBFileSystem.PATH_SEPARATOR;
+        return SmbFileSystem.PATH_SEPARATOR;
     }
 
     /**
-     * Returns the root directories, i.e. the list of shares, provided by the current {@link SMBFileSystem}.
+     * Returns the root directories, i.e. the list of shares, provided by the current {@link SmbFileSystem}.
      *
-     * @return List of shares for the current {@link SMBFileSystem}.
+     * @return List of shares for the current {@link SmbFileSystem}.
      */
     @Override
     public Iterable<Path> getRootDirectories() {
@@ -178,17 +177,17 @@ public final class SMBFileSystem extends FileSystem {
             throw new ClosedFileSystemException();
         }
         try {
-            SmbFile file = new SmbFile(SMBFileSystem.SMB_SCHEME + SMBFileSystem.SCHEME_SEPARATOR + this.identifier + "/", context);
-            return Arrays.stream(file.list()).map(s -> (Path) (new SMBPath(this, "/" + s))).collect(Collectors.toList());
+            SmbFile file = new SmbFile(SmbFileSystem.SMB_SCHEME + SmbFileSystem.SCHEME_SEPARATOR + this.identifier + "/", context);
+            return Arrays.stream(file.list()).map(s -> (Path) (new SmbPath(this, "/" + s))).collect(Collectors.toList());
         } catch (MalformedURLException | SmbException e) {
             return new ArrayList<>(0);
         }
     }
 
     /**
-     * Returns the {@link SMBFileStore}s, i.e. the list of shares, provided by the current {@link SMBFileSystem}.
+     * Returns the {@link SmbFileStore}s, i.e. the list of shares, provided by the current {@link SmbFileSystem}.
      *
-     * @return List of {@link SMBFileStore}s for the current {@link SMBFileSystem}.
+     * @return List of {@link SmbFileStore}s for the current {@link SmbFileSystem}.
      */
     @Override
     public Iterable<FileStore> getFileStores() {
@@ -196,8 +195,8 @@ public final class SMBFileSystem extends FileSystem {
             throw new ClosedFileSystemException();
         }
         try {
-            SmbFile file = new SmbFile(SMBFileSystem.SMB_SCHEME + SMBFileSystem.SCHEME_SEPARATOR + this.identifier + "/", context);
-            return Arrays.stream(file.list()).map(s -> (FileStore) (new SMBFileStore(this, s))).collect(Collectors.toList());
+            SmbFile file = new SmbFile(SmbFileSystem.SMB_SCHEME + SmbFileSystem.SCHEME_SEPARATOR + this.identifier + "/", context);
+            return Arrays.stream(file.list()).map(s -> (FileStore) (new SmbFileStore(this, s))).collect(Collectors.toList());
         } catch (MalformedURLException | SmbException e) {
             return new ArrayList<>(0);
         }
@@ -217,13 +216,13 @@ public final class SMBFileSystem extends FileSystem {
     }
 
     /**
-     * Constructs a new {@link SMBPath} by concatenating the provided path components. If the first path starts with
+     * Constructs a new {@link SmbPath} by concatenating the provided path components. If the first path starts with
      * a '/' the newly constructed path will be an absolute path. If the last component ends with a '/' the path is treated
      * as a folder.
      *
      * @param first First path component.
      * @param more  List of additional path components.
-     * @return Constructed {@link SMBPath}.
+     * @return Constructed {@link SmbPath}.
      */
     @Override
     public Path getPath(String first, String... more) {
@@ -235,23 +234,23 @@ public final class SMBFileSystem extends FileSystem {
         if (more.length > 0) {
             System.arraycopy(more, 0, components, 1, more.length);
         }
-        final String path = SMBPathUtil.mergePath(components, 0, components.length, first.startsWith("/"), more[more.length - 1].endsWith("/"));
-        return new SMBPath(this, path);
+        final String path = SmbPathUtils.mergePath(components, 0, components.length, first.startsWith("/"), more[more.length - 1].endsWith("/"));
+        return new SmbPath(this, path);
     }
 
     /**
-     * Returns a new {@link SMBPathMatcher} for the provided pattern.
+     * Returns a new {@link SmbPathMatcher} for the provided pattern.
      *
      * @param syntaxAndPattern The syntax or pattern that should be used to match paths against.
-     * @return {@link SMBPathMatcher}
+     * @return {@link SmbPathMatcher}
      */
     @Override
     public PathMatcher getPathMatcher(String syntaxAndPattern) {
-        return new SMBPathMatcher(syntaxAndPattern);
+        return new SmbPathMatcher(syntaxAndPattern);
     }
 
     /**
-     * {@link UserPrincipalLookupService} are not supported by the current version of {@link SMBFileSystem}.
+     * {@link UserPrincipalLookupService} are not supported by the current version of {@link SmbFileSystem}.
      *
      * @throws UnsupportedOperationException Always
      */
@@ -273,20 +272,20 @@ public final class SMBFileSystem extends FileSystem {
     }
 
     /**
-     * Getter for the identifier of this {@link SMBFileSystem}.
+     * Getter for the identifier of this {@link SmbFileSystem}.
      *
-     * @return {@link SMBFileSystem}'s identifier, which acts as authority and name of the server.
+     * @return {@link SmbFileSystem}'s identifier, which acts as authority and name of the server.
      */
     String getName() {
         return this.identifier;
     }
 
     /**
-     * Returns the fully qualified name to the server represented by the current instance of {@link SMBFileSystem}.
+     * Returns the fully qualified name to the server represented by the current instance of {@link SmbFileSystem}.
      *
-     * @return FQN of the server represented by the current instance of {@link SMBFileSystem}.
+     * @return FQN of the server represented by the current instance of {@link SmbFileSystem}.
      */
     String getFQN() {
-        return SMBFileSystem.SMB_SCHEME + SMBFileSystem.SCHEME_SEPARATOR + this.identifier;
+        return SmbFileSystem.SMB_SCHEME + SmbFileSystem.SCHEME_SEPARATOR + this.identifier;
     }
 }

@@ -3,7 +3,7 @@ package com.github.jfrommann.nio.smb;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 
-public final class SMBPathMatcher implements PathMatcher {
+public final class SmbPathMatcher implements PathMatcher {
 
     /**
      * The RegEx pattern used to match the path. It does have a postfix qualifier!
@@ -11,11 +11,11 @@ public final class SMBPathMatcher implements PathMatcher {
     private final String pattern;
 
     /**
-     * Default constructor for {@link SMBPathMatcher}.
+     * Default constructor for {@link SmbPathMatcher}.
      *
      * @param pattern The pattern that should be used. The pattern should start with either a 'regex:' or 'glob:' qualifier. If no qualifier is provided, RegEx is assumed.
      */
-    SMBPathMatcher(String pattern) {
+    SmbPathMatcher(String pattern) {
         if (pattern.startsWith("glob:")) {
             this.pattern = globToRegex(pattern.replaceFirst("glob:", ""));
         } else if (pattern.startsWith("regex:")) {
