@@ -47,7 +47,7 @@ properties and it is the only way to enable the ``SmbWatchService``.
 Map<String, Object> environment = new HashMap<>(); 
 environment.put(SmbFileSystemProvider.PROPERTY_KEY_USERNAME, "username");
 environment.put(SmbFileSystemProvider.PROPERTY_KEY_PASSWORD, "password"); 
-environment.put(SmbFileSystemProvider.PROPERTY_KEY_WATCHSERVICE_ENABLED, "true");
+environment.put(SmbFileSystemProvider.PROPERTY_KEY_WATCHSERVICE_ENABLED, true);
 
 SmbFileSystem fileSystem = SmbFileSystemProvider.getDefault().newFileSystem(URI.create("smb://server), environment);
 Path dir = fileSystem.getPath("/share", "dir/");
