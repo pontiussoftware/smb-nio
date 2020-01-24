@@ -53,7 +53,7 @@ SmbFileSystem fileSystem = SmbFileSystemProvider.getDefault().newFileSystem(URI.
 Path dir = fileSystem.getPath("/share", "dir/");
 ```   
 
-**Hint:** URIs of directories must end with a slash (``/``), this is a requirement ``jcifs-ng``.
+**Hint:** URIs of directories must end with a slash (``/``), this is a requirement of ``jcifs-ng``.
 
 # Issues
 Please report issues using the GitHub issue tracker.
