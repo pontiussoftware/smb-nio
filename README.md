@@ -19,7 +19,7 @@ The easiest way to use the library is to add it as a Maven dependency to your pr
 <dependency>
     <groupId>com.github.jfrommann</groupId>
     <artifactId>smb-nio-ng</artifactId>
-    <version>0.2.0</version>
+    <version>0.2.1</version>
 </dependency>
 ```
 
