@@ -1,7 +1,6 @@
 package com.github.jfrommann.nio.smb;
 
 import com.github.jfrommann.nio.smb.watch.SmbWatchService;
-import com.sun.nio.file.ExtendedWatchEventModifier;
 import jcifs.smb.SmbFile;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
@@ -595,6 +594,6 @@ public final class SmbPath implements Path {
 
     @Override
     public WatchKey register(WatchService watcher, WatchEvent.Kind<?>... kinds) throws IOException {
-        return register(watcher, kinds, ExtendedWatchEventModifier.FILE_TREE);
+        return register(watcher, kinds, null);
     }
 }
