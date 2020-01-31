@@ -57,6 +57,7 @@ public abstract class AbstractSmbPoller implements SmbPoller {
     private void process() {
         LOGGER.info("SMB poller started: poll interval = {} ms", pollIntervalMillis);
 
+        long lastPollTime = 0L;
         while (true) {
             try {
                 final boolean shouldStop = processRequests();
@@ -68,14 +69,18 @@ public abstract class AbstractSmbPoller implements SmbPoller {
                 LOGGER.error("Failed to process requests", e);
             }
 
-            try {
-                poll();
-            } catch (Exception e) {
-                LOGGER.error("Poll failed", e);
+            final long now = System.currentTimeMillis();
+            if (now - lastPollTime >= pollIntervalMillis) {
+                try {
+                    poll();
+                } catch (Exception e) {
+                    LOGGER.error("Poll failed", e);
+                }
+                lastPollTime = now;
             }
 
             try {
-                Thread.sleep(pollIntervalMillis);
+                Thread.sleep(10L);
             } catch (InterruptedException e) {
                 // ignored
             }
