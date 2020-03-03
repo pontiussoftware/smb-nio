@@ -49,7 +49,7 @@
     </licenses>
 
     <scm>
-        <connection>scm:git:git://github.com/jfrommann/smb-nio-ng.git</connection>
+        <connection>scm:git:ssh://github.com/jfrommann/smb-nio-ng.git</connection>
         <developerConnection>scm:git:ssh://github.com/jfrommann/smb-nio-ng.git</developerConnection>
         <url>https://github.com/jfrommann/smb-nio-ng</url>
     </scm>
