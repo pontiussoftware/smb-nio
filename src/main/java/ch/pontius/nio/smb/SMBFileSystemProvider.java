@@ -5,6 +5,7 @@ import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import jcifs.Config;
+import jcifs.context.SingletonContext;
 import jcifs.smb.SmbFile;
 
 import java.io.IOException;
@@ -449,15 +450,15 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
                     }
                 }
             } else {
-                if (Config.getProperty(PROPERTY_KEY_JCIFS_DOMAIN) != null) {
-                    builder.append(Config.getProperty(PROPERTY_KEY_JCIFS_DOMAIN));
+                if (SingletonContext.getInstance().getConfig().getDefaultDomain() != null) {
+                    builder.append(SingletonContext.getInstance().getConfig().getDefaultDomain());
                     builder.append(";");
                 }
-                if (Config.getProperty(PROPERTY_KEY_JCIFS_USERNAME) != null) {
-                    builder.append(URLEncoder.encode(Config.get(PROPERTY_KEY_JCIFS_USERNAME).toString(), "UTF-8"));
-                    if (Config.getProperty(PROPERTY_KEY_JCIFS_PASSWORD) != null) {
+                if (SingletonContext.getInstance().getConfig().getDefaultUsername() != null) {
+                    builder.append(URLEncoder.encode(SingletonContext.getInstance().getConfig().getDefaultUsername(), "UTF-8"));
+                    if (SingletonContext.getInstance().getConfig().getDefaultPassword() != null) {
                         builder.append(":");
-                        builder.append(URLEncoder.encode(Config.get(PROPERTY_KEY_JCIFS_PASSWORD).toString(), "UTF-8"));
+                        builder.append(URLEncoder.encode(SingletonContext.getInstance().getConfig().getDefaultPassword(), "UTF-8"));
                     }
                 }
             }
@@ -469,7 +470,6 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
                 authority = uri.getAuthority();
             }
         }
-
         return authority;
     }
 }

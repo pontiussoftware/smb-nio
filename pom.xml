@@ -6,11 +6,11 @@
 
     <groupId>ch.pontius.nio</groupId>
     <artifactId>smb-nio</artifactId>
-    <version>0.6-RELEASE</version>
+    <version>0.7-RELEASE</version>
     <packaging>jar</packaging>
 
     <name>NIO SMB</name>
-    <description>This is a Java NIO.2 file system provider that can be used to access CIFS/SMB file systems.</description>
+    <description>This is a Java NIO.2 file system provider that can be used to access CIFS/SMB (SMB 1 and SMB 2) file systems.</description>
     <url>https://github.com/pontiussoftware/smb-nio</url>
 
     <properties>
@@ -49,9 +49,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>jcifs</groupId>
-            <artifactId>jcifs</artifactId>
-            <version>1.3.17</version>
+            <groupId>eu.agno3.jcifs</groupId>
+            <artifactId>jcifs-ng</artifactId>
+            <version>2.1.4</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>

@@ -1,5 +1,6 @@
 package ch.pontius.nio.smb;
 
+import jcifs.context.SingletonContext;
 import jcifs.smb.SmbException;
 import jcifs.smb.SmbFile;
 
@@ -123,7 +124,7 @@ public final class SMBFileSystem extends FileSystem {
     public Iterable<Path> getRootDirectories() {
         if (!this.isOpen()) throw new ClosedFileSystemException();
         try {
-            SmbFile file = new SmbFile(SMBFileSystem.SMB_SCHEME + SMBFileSystem.SCHEME_SEPARATOR + this.identifier, "/");
+            SmbFile file = new SmbFile(SMBFileSystem.SMB_SCHEME + SMBFileSystem.SCHEME_SEPARATOR + this.identifier + "/", SingletonContext.getInstance());
             return Arrays.stream(file.list()).map(s -> (Path)(new SMBPath(this, "/" + s))).collect(Collectors.toList());
         } catch (MalformedURLException | SmbException e) {
             return new ArrayList<>(0);
@@ -139,7 +140,7 @@ public final class SMBFileSystem extends FileSystem {
     public Iterable<FileStore> getFileStores() {
         if (!this.isOpen()) throw new ClosedFileSystemException();
         try {
-            SmbFile file = new SmbFile(SMBFileSystem.SMB_SCHEME + SMBFileSystem.SCHEME_SEPARATOR + this.identifier, "/");
+            SmbFile file = new SmbFile(SMBFileSystem.SMB_SCHEME + SMBFileSystem.SCHEME_SEPARATOR + this.identifier + "/", SingletonContext.getInstance());
             return Arrays.stream(file.list()).map(s -> (FileStore)(new SMBFileStore(this, s))).collect(Collectors.toList());
         } catch (MalformedURLException | SmbException e) {
             return new ArrayList<>(0);
