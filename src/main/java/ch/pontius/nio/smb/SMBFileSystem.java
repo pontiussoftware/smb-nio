@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
  * The {@link SMBFileSystem} is the factory for several types of objects, like {@link SMBPath}, {@link SMBFileStore} etc.
  *
  * @author      Ralph Gasser
- * @version     1.0
+ * @version     1.1
  * @since       1.0
  */
 public final class SMBFileSystem extends FileSystem {

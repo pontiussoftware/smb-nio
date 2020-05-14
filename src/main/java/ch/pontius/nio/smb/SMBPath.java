@@ -1,7 +1,5 @@
 package ch.pontius.nio.smb;
 
-import jcifs.CIFSContext;
-import jcifs.RuntimeCIFSException;
 import jcifs.context.SingletonContext;
 import jcifs.smb.SmbFile;
 
@@ -13,7 +11,12 @@ import java.nio.file.*;
 import java.util.*;
 
 
-
+/**
+ * A {@link Path} implementation that can be used with SMBNio
+ *
+ * @author Ralph Gasser
+ * @version 1.1
+ */
 public final class SMBPath implements Path {
     /** Reference to the {@link SMBFileSystem}. */
     private final SMBFileSystem fileSystem;

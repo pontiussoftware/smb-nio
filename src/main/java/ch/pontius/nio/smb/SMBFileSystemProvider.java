@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * all the file access functionality.
  *
  * @author      Ralph Gasser
- * @version     1.0.1
+ * @version     1.1
  * @since       1.0
  */
 public final class SMBFileSystemProvider extends FileSystemProvider {
