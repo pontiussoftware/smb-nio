@@ -1,8 +1,5 @@
 package ch.pontius.nio.smb;
 
-import java.io.UnsupportedEncodingException;
-import java.net.URLEncoder;
-import java.util.Properties;
 import jcifs.CIFSContext;
 import jcifs.CIFSException;
 import jcifs.config.PropertyConfiguration;
@@ -11,20 +8,34 @@ import jcifs.context.SingletonContext;
 import jcifs.smb.SmbFile;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
-
+import java.net.URLEncoder;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.file.*;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.AccessMode;
+import java.nio.file.CopyOption;
+import java.nio.file.DirectoryStream;
+import java.nio.file.FileStore;
+import java.nio.file.FileSystemAlreadyExistsException;
+import java.nio.file.FileSystemNotFoundException;
+import java.nio.file.LinkOption;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.NotDirectoryException;
+import java.nio.file.OpenOption;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.FileAttributeView;
 import java.nio.file.spi.FileSystemProvider;
-
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +52,7 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
     private final static Logger LOGGER = LoggerFactory.getLogger(SMBFileSystemProvider.class);
 
     /** Local cache of {@link SMBFileSystem} instances. */
-    final Map<String,SMBFileSystem> fileSystemCache;
+    final Map<String, SMBFileSystem> fileSystemCache;
 
     /** Default constructor for {@link SMBFileSystemProvider}. */
     public SMBFileSystemProvider() {
@@ -410,7 +421,7 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
      *
      * @param env The environment map to convert.
      */
-    private CIFSContext contextFromMap(Map<String,?> env) {
+    private CIFSContext contextFromMap(Map<String, ?> env) {
         if (env == null || env.isEmpty()) {
             return SingletonContext.getInstance();
         } else {
@@ -452,14 +463,14 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
             final StringBuilder builder = new StringBuilder();
             if (context != null) {
                 if (context.getConfig().getDefaultDomain() != null) {
-                    builder.append(SingletonContext.getInstance().getConfig().getDefaultDomain());
+                    builder.append(context.getConfig().getDefaultDomain());
                     builder.append(";");
                 }
                 if (context.getConfig().getDefaultUsername() != null) {
-                    builder.append(URLEncoder.encode(SingletonContext.getInstance().getConfig().getDefaultUsername(), "UTF-8"));
-                    if (SingletonContext.getInstance().getConfig().getDefaultPassword() != null) {
+                    builder.append(URLEncoder.encode(context.getConfig().getDefaultUsername(), "UTF-8"));
+                    if (context.getConfig().getDefaultPassword() != null) {
                         builder.append(":");
-                        builder.append(URLEncoder.encode(SingletonContext.getInstance().getConfig().getDefaultPassword(), "UTF-8"));
+                        builder.append(URLEncoder.encode(context.getConfig().getDefaultPassword(), "UTF-8"));
                     }
                 }
             }
