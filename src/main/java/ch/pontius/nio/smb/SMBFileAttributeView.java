@@ -46,8 +46,20 @@ public final class SMBFileAttributeView implements BasicFileAttributeView {
 
     @Override
     public void setTimes(FileTime lastModifiedTime, FileTime lastAccessTime, FileTime createTime) throws IOException {
+        if (lastModifiedTime == null && lastAccessTime == null && createTime == null) {
+            return;
+        }
+
         final SmbFile file = this.path.getSmbFile();
-        file.setLastModified(lastModifiedTime.to(TimeUnit.MILLISECONDS));
-        file.setCreateTime(createTime.to(TimeUnit.MILLISECONDS));
+
+        if (lastModifiedTime != null) {
+            file.setLastModified(lastModifiedTime.to(TimeUnit.MILLISECONDS));
+        }
+        if (lastAccessTime != null) {
+            file.setLastAccess(lastAccessTime.to(TimeUnit.MILLISECONDS));
+        }
+        if (createTime != null) {
+            file.setCreateTime(createTime.to(TimeUnit.MILLISECONDS));
+        }
     }
 }
