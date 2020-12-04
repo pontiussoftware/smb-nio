@@ -64,11 +64,16 @@ public final class SMBPathUtil {
      * @return Resulting path string
      */
     public static String mergePath(String[] components, int start, int end, boolean absolute, boolean folder) {
+        if (components.length == 0) return "";
+
         StringBuilder builder = new StringBuilder();
         if (absolute) builder.append(SMBFileSystem.PATH_SEPARATOR);
         for (int i = start; i<end; i++) {
-            builder.append(components[i]);
-            builder.append(SMBFileSystem.PATH_SEPARATOR);
+            String component = components[i];
+            builder.append(component);
+            if (!component.endsWith("/")) {
+                builder.append(SMBFileSystem.PATH_SEPARATOR);
+            }
         }
         if (!folder) {
             return builder.substring(0, Math.max(0,builder.length()-1));

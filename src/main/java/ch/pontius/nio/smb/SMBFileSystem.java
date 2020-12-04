@@ -14,6 +14,7 @@ import java.nio.file.spi.FileSystemProvider;
 
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * This class represents a single SMB server (filesystem). The authority part of the SMB URI creates a unique {@link SMBFileSystem}, that is,
@@ -170,12 +171,16 @@ public final class SMBFileSystem extends FileSystem {
     @Override
     public Path getPath(String first, String... more) {
         if (!this.isOpen()) throw new ClosedFileSystemException();
-        final String[] components = new String[more.length + 1];
-        components[0] = first;
-        if (more.length > 0) {
-            System.arraycopy(more, 0, components, 1, more.length);
-        }
-        final String path = SMBPathUtil.mergePath(components, 0, components.length, first.startsWith("/"), more[more.length-1].endsWith("/"));
+        String[] components = Stream.concat(Arrays.stream(new String[] { first }), Arrays.stream(more))
+                .toArray(String[]::new);
+        boolean folder = components[components.length - 1].endsWith("/");
+        final String path = SMBPathUtil.mergePath(
+                components,
+                0,
+                components.length,
+                first.startsWith("/"),
+                folder
+        );
         return new SMBPath(this, path);
     }
 
