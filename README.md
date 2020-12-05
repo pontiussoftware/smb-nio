@@ -1,4 +1,7 @@
 # SMB NIO.2
+
+[![Maven Central](https://img.shields.io/maven-central/v/ch.pontius.nio/smb-nio.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22ch.pontius.nio%22%20AND%20a:%22smb-nio%22)
+
 This is a Java NIO.2 file system provider that can be used to access CIFS/SMB 1.0 and 2.0 file systems. CIFS is the standard file sharing protocol on the Microsoft Windows platform (e.g. to map a network drive). 
 
 This library uses [jcifs-ng](https://github.com/AgNO3/jcifs-ng/) internally, which is an Open Source client library that implements the CIFS/SMB networking protocol in 100% Java. 
@@ -14,7 +17,7 @@ The easiest way to use the library is to add it as a Maven dependency to your pr
   <dependency>
     <groupId>ch.pontius.nio</groupId>
     <artifactId>smb-nio</artifactId>
-    <version>0.7-RELEASE</version>
+    <version>0.8.0</version>
   </dependency>
 </dependencies>
 ```
