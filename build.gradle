@@ -1,0 +1,89 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+}
+
+plugins {
+    id 'idea'
+    id 'java'
+    id 'java-library'
+    id 'maven-publish'
+    id 'signing'
+}
+
+group 'ch.pontius.nio'
+version '0.8-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            groupId = 'ch.pontius.nio'
+            artifactId = 'smb-nio'
+            version = System.getenv().getOrDefault("MAVEN_PUBLICATION_VERSION", version.toString())
+            pom {
+                name = 'NIO SMB Driver'
+                description = 'This is a Java NIO.2 file system provider that can be used to access CIFS/SMB (SMB 1 and SMB 2) file systems.'
+                url = 'https://github.com/pontiussoftware/smb-nio/'
+
+                licenses {
+                    license {
+                        name = 'MIT License'
+                        url = 'https://opensource.org/licenses/MIT'
+                    }
+                }
+
+                developers {
+                    developer {
+                        id = 'ppanopticon'
+                        name = 'Ralph Gasser'
+                        email = 'rg@pontius.ch'
+                        organization = 'pontius software GmbH'
+                    }
+                }
+
+                scm {
+                    connection = 'scm:git:git://github.com/pontiussoftware/smb-nio.git'
+                    url = 'https://github.com/pontiussoftware/smb-nio'
+                }
+            }
+            from components.java
+        }
+    }
+    repositories {
+        maven {
+            def releasesRepoUrl = 'https://oss.sonatype.org/service/local/staging/deploy/maven2/'
+            def snapshotsRepoUrl = 'https://oss.sonatype.org/content/repositories/snapshots/'
+            name = "OSSRH"
+            url = (publishing.publications.mavenJava.version.endsWith('SNAPSHOT')) ? snapshotsRepoUrl : releasesRepoUrl
+            credentials {
+                username = System.getenv("MAVEN_USERNAME")
+                password = System.getenv("MAVEN_PASSWORD")
+            }
+        }
+    }
+}
+
+signing {
+    def signingKey = findProperty("signingKey")
+    def signingPassword = findProperty("signingPassword")
+    useInMemoryPgpKeys(signingKey, signingPassword)
+    sign publishing.publications.mavenJava
+}
+
+dependencies {
+    compile group: 'eu.agno3.jcifs', name: 'jcifs-ng', version: '2.1.5'
+    compile group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.7.0'
+}
