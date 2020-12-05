@@ -5,6 +5,7 @@ import jcifs.CIFSException;
 import jcifs.config.PropertyConfiguration;
 import jcifs.context.BaseContext;
 import jcifs.context.SingletonContext;
+import jcifs.smb.SmbException;
 import jcifs.smb.SmbFile;
 
 import java.io.IOException;
@@ -16,6 +17,7 @@ import java.nio.file.AccessDeniedException;
 import java.nio.file.AccessMode;
 import java.nio.file.CopyOption;
 import java.nio.file.DirectoryStream;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileStore;
 import java.nio.file.FileSystemAlreadyExistsException;
 import java.nio.file.FileSystemNotFoundException;
@@ -24,6 +26,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.NotDirectoryException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -235,12 +238,18 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
      * @param dir {@link SMBPath} to folder that should be created.
      *
      * @throws IllegalArgumentException If provided path is not an {@link SMBPath} instance.
+     * @throws FileAlreadyExistsException
+     *         if a directory could not otherwise be created because a file of
+     *         that name already exists <i>(optional specific exception)</i>
      * @throws IOException If creating the folder fails for some reason.
      */
     @Override
     public void createDirectory(Path dir, FileAttribute<?>... attrs) throws IOException {
-        SmbFile smbFile = SMBPath.fromPath(dir).getSmbFile();
-        smbFile.mkdir();
+        try (SmbFile smbFile = SMBPath.fromPath(dir).getSmbFile()) {
+            smbFile.mkdir();
+        } catch (SmbException e) {
+            SMBExceptionUtil.rethrowAsNIOException(e, dir);
+        }
     }
 
     /**
@@ -249,48 +258,95 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
      * @param path {@link SMBPath} to file that should be deleted.
      *
      * @throws IllegalArgumentException If provided path is not an {@link SMBPath} instance.
+     * @throws NoSuchFileException
+     *         if the file does not exist <i>(optional specific exception)</i>
      * @throws IOException If deleting the file fails for some reason.
      */
     @Override
     public void delete(Path path) throws IOException {
-        SmbFile smbFile = SMBPath.fromPath(path).getSmbFile();
-        smbFile.delete();
+        try (SmbFile smbFile = SMBPath.fromPath(path).getSmbFile()) {
+            smbFile.delete();
+        } catch (SmbException e) {
+            SMBExceptionUtil.rethrowAsNIOException(e, path);
+        }
     }
 
     /**
      * Copies the file under provided source {@link SMBPath} to the destination {@link SMBPath}.
-     * CopyOptions are ignored!
+     * Some CopyOptions are ignored!
      *
      * @param source Source {@link SMBPath}
      * @param target Destination {@link SMBPath}
-     * @param options CopyOptions (no effect)
+     * @param options CopyOptions
      *
      * @throws IllegalArgumentException If provided paths are not {@link SMBPath} instances.
+     * @throws NoSuchFileException
+     *         if the file does not exist <i>(optional specific exception)</i>
+     * @throws FileAlreadyExistsException
+     *         if the target file exists but cannot be replaced because the
+     *         {@code REPLACE_EXISTING} option is not specified <i>(optional
+     *         specific exception)</i>
      * @throws IOException If copying fails for some reason.
      */
     @Override
     public void copy(Path source, Path target, CopyOption... options) throws IOException {
-        SmbFile fromFile = SMBPath.fromPath(source).getSmbFile();
-        SmbFile toFile = SMBPath.fromPath(target).getSmbFile();
-        fromFile.copyTo(toFile);
+        boolean replaceExisting = false;
+        boolean copyAttributes = false;
+        for (CopyOption opt : options) {
+            if (opt == StandardCopyOption.REPLACE_EXISTING) {
+                replaceExisting = true;
+            } else if (opt == StandardCopyOption.COPY_ATTRIBUTES) {
+                copyAttributes = true;
+            }
+        }
+
+        if (copyAttributes) {
+            LOGGER.debug("Setting file attributes is currently not supported by SMBFileSystemProvider.");
+        }
+
+        try (SmbFile fromFile = SMBPath.fromPath(source).getSmbFile();
+                SmbFile toFile = SMBPath.fromPath(target).getSmbFile()) {
+            if (!replaceExisting && toFile.exists()) {
+                throw new FileAlreadyExistsException(toFile.toString(), null, "The specified SMB resource does already exist.");
+            }
+            fromFile.copyTo(toFile);
+        } catch (SmbException e) {
+            SMBExceptionUtil.rethrowAsNIOException(e, source, target);
+        }
     }
 
     /**
      * Moves the file under the provided source {@link SMBPath} to the destination {@link SMBPath}.
-     * CopyOptions are ignored!
+     * Some CopyOptions are ignored!
      *
      * @param source Source {@link SMBPath}
      * @param target Destination {@link SMBPath}
-     * @param options CopyOptions (no effect)
+     * @param options CopyOptions
      *
      * @throws IllegalArgumentException If provided paths are not {@link SMBPath} instances.
+     * @throws NoSuchFileException
+     *         if the file does not exist <i>(optional specific exception)</i>
+     * @throws FileAlreadyExistsException
+     *         if the target file exists but cannot be replaced because the
+     *         {@code REPLACE_EXISTING} option is not specified <i>(optional
+     *         specific exception)</i>
      * @throws IOException If moving fails for some reason.
      */
     @Override
     public void move(Path source, Path target, CopyOption... options) throws IOException {
-        SmbFile fromFile = SMBPath.fromPath(source).getSmbFile();
-        SmbFile toFile = SMBPath.fromPath(target).getSmbFile();
-        fromFile.renameTo(toFile);
+        boolean replaceExisting = false;
+        for (CopyOption opt : options) {
+            if (opt == StandardCopyOption.REPLACE_EXISTING) {
+                replaceExisting = true;
+            }
+        }
+
+        try (SmbFile fromFile = SMBPath.fromPath(source).getSmbFile();
+                SmbFile toFile = SMBPath.fromPath(target).getSmbFile()) {
+            fromFile.renameTo(toFile, replaceExisting);
+        } catch (SmbException e) {
+            SMBExceptionUtil.rethrowAsNIOException(e, source, target);
+        }
     }
 
     /**
@@ -301,7 +357,7 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
      * @return True if the two paths point to the same resource.
      *
      * @throws IllegalArgumentException If provided paths are not {@link SMBPath} instances.
-     * @throws IOException If moving fails for some reason.
+     * @throws IOException If an I/O error occurs.
      */
     @Override
     public boolean isSameFile(Path path1, Path path2) throws IOException {
@@ -317,12 +373,16 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
      * @return True if the resource under {@link SMBPath} is hidden.
      *
      * @throws IllegalArgumentException If provided paths are not {@link SMBPath} instances.
-     * @throws IOException If moving fails for some reason.
+     * @throws IOException If an I/O error occurs.
      */
     @Override
     public boolean isHidden(Path path) throws IOException {
-        SmbFile smbFile = SMBPath.fromPath(path).getSmbFile();
-        return smbFile.isHidden();
+        try (SmbFile smbFile = SMBPath.fromPath(path).getSmbFile()) {
+            return smbFile.isHidden();
+        } catch (SmbException e) {
+            SMBExceptionUtil.rethrowAsNIOException(e, path);
+            return false;
+        }
     }
 
     /**
@@ -334,7 +394,7 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
      * @throws NoSuchFileException If file or folder specified by {@link SMBPath} does not exist.
      * @throws AccessDeniedException If requested access cannot be provided for file or folder under {@link SMBPath}.
      * @throws IllegalArgumentException If provided path is not a {@link SMBPath} instance.
-     * @throws IOException If checking accessfails for some reason.
+     * @throws IOException If checking access fails for some reason.
      */
     @Override
     public void checkAccess(Path path, AccessMode... modes) throws IOException {
