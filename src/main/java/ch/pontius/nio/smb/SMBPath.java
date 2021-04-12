@@ -7,9 +7,17 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.*;
-import java.util.*;
-
+import java.nio.file.ClosedFileSystemException;
+import java.nio.file.FileSystem;
+import java.nio.file.LinkOption;
+import java.nio.file.Path;
+import java.nio.file.WatchEvent;
+import java.nio.file.WatchKey;
+import java.nio.file.WatchService;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * A {@link Path} implementation that can be used with SMBNio
@@ -465,12 +473,12 @@ public final class SMBPath implements Path {
     @Override
     public int compareTo(Path other) {
         /* Check if other path is on the same filesystem. */
-        if (!(other instanceof SMBPath))  throw new IllegalArgumentException("You can only resolve an SMB path against another SMB path.");
-        if (((SMBPath)other).fileSystem != this.fileSystem) throw new IllegalArgumentException("You can only resolve an SMB path against another SMB path on the same file system.");
+        if (!(other instanceof SMBPath))  throw new IllegalArgumentException("You can only compare an SMB path against another SMB path.");
+        if (((SMBPath)other).fileSystem != this.fileSystem) throw new IllegalArgumentException("You can only compare an SMB path against another SMB path on the same file system.");
 
         /* */
         String thisPath = SMBPathUtil.mergePath(this.components, 0, this.components.length, this.absolute, this.folder);
-        String thatPath = SMBPathUtil.mergePath(((SMBPath)other).components, 0, this.components.length, ((SMBPath)other).absolute, ((SMBPath)other).folder);
+        String thatPath = SMBPathUtil.mergePath(((SMBPath)other).components, 0, ((SMBPath)other).components.length, ((SMBPath)other).absolute, ((SMBPath)other).folder);
         return thisPath.compareTo(thatPath);
     }
 
@@ -504,7 +512,9 @@ public final class SMBPath implements Path {
     public boolean equals(Object other) {
         if (!(other instanceof SMBPath)) return false;
         if (((SMBPath)other).fileSystem != this.fileSystem) return false;
-        return Arrays.equals(this.components, ((SMBPath) other).components);
+        return Arrays.equals(this.components, ((SMBPath) other).components)
+                && this.absolute == ((SMBPath) other).absolute
+                && this.folder == ((SMBPath) other).folder;
     }
 
     /**
