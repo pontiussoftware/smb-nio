@@ -1,22 +1,29 @@
-import ch.pontius.nio.smb.SMBFileSystemProvider;
-import ch.pontius.nio.smb.SMBPath;
-import org.junit.jupiter.api.Test;
+package ch.pontius.nio.smb;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
-public class PathTest {
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class SMBPathTest {
 
     private static final String PATH_ROOT = "smb://test@192.168.1.105/";
     private static final String PATH_01 = "smb://test@192.168.1.105/home/rgasser/text.xls";
     private static final String PATH_02 = "smb://test@192.168.1.105/home/rgasser/";
     private static final String PATH_03 = "smb://test@192.168.1.105/home/rgasser/lala/text02.xls";
     private static final String PATH_04 = "smb://test@192.168.1.106/home/rgasser/text.xls";
-    private static final String PATH_05 = "smb://test@192.168.1.106/home/rgasser/lala/text.xls";
-
+    private static final String PATH_05 = "smb://test@192.168.1.106/home/rgasser/";
+    private static final String PATH_06 = "smb://test@192.168.1.105/home/rgasser";
 
     /**
      * Test paths for the relativize unit tests.
@@ -42,7 +49,7 @@ public class PathTest {
      * @throws URISyntaxException
      */
     @Test
-    public void testDefinition() throws URISyntaxException {
+    void testDefinition() throws URISyntaxException {
         final SMBFileSystemProvider provider = new SMBFileSystemProvider();
         final SMBPath path01 = provider.getPath(new URI(PATH_01));
         final SMBPath path02 = provider.getPath(new URI(PATH_02));
@@ -61,25 +68,49 @@ public class PathTest {
     }
 
     /**
+     * Tests the SMBPath.compareTo() method.
+     *
+     * @throws URISyntaxException
+     */
+    @Test
+    void testCompareTo() throws URISyntaxException {
+        final SMBFileSystemProvider provider = new SMBFileSystemProvider();
+        final Path leftPath = provider.getPath(new URI(PATH_01));
+        final Path rightPath = provider.getPath(new URI(PATH_02));
+        final Path rightPath02 = provider.getPath(new URI(PATH_05));
+        final Path rightPath03 = Paths.get("/home/rgasser/text.xls");
+        assertAll("SMBPath.compareTo()",
+                () -> assertTrue(leftPath.compareTo(rightPath) > 0),
+                () -> assertTrue(rightPath.compareTo(leftPath) < 0),
+                () -> assertEquals(0, leftPath.compareTo(leftPath)),
+                () -> assertThrows(IllegalArgumentException.class, () -> leftPath.compareTo(rightPath02)),
+                () -> assertThrows(IllegalArgumentException.class, () -> leftPath.compareTo(rightPath03))
+        );
+    }
+
+    /**
      * Tests the SMBPath.equals() method. Paths are considered equal if they belong to the same file system and
      * are composed of the same path components.
      *
      * @throws URISyntaxException
      */
     @Test
-    public void testEquals() throws URISyntaxException {
+    void testEquals() throws URISyntaxException {
         final SMBFileSystemProvider provider = new SMBFileSystemProvider();
         final Path path01a = provider.getPath(new URI(PATH_01));
         final Path path01b = provider.getPath(new URI(PATH_01));
         final Path path02 = provider.getPath(new URI(PATH_02));
         final Path path03 = provider.getPath(new URI(PATH_03));
+        final Path path06 = provider.getPath(new URI(PATH_06));
 
         assertAll("SMBPath.equals()",
                 () -> assertEquals(path01a, path01b),
                 () -> assertNotEquals(path01a, path02),
                 () -> assertNotEquals(path01b, path02),
                 () -> assertNotEquals(path01a, path03),
-                () -> assertNotEquals(path01b, path03)
+                () -> assertNotEquals(path01b, path03),
+                () -> assertNotEquals(path02, path06),
+                () -> assertNotEquals(path02, path06)
         );
     }
 
@@ -89,7 +120,7 @@ public class PathTest {
      * @throws URISyntaxException
      */
     @Test
-    public void testParent() throws URISyntaxException {
+    void testParent() throws URISyntaxException {
         final SMBFileSystemProvider provider = new SMBFileSystemProvider();
         final Path path01a = provider.getPath(new URI(PATH_01));
         final Path parent = path01a.getParent();
@@ -109,7 +140,7 @@ public class PathTest {
      * @throws URISyntaxException
      */
     @Test
-    public void testFilename() throws URISyntaxException {
+    void testFilename() throws URISyntaxException {
         final SMBFileSystemProvider provider = new SMBFileSystemProvider();
         final Path path01 = provider.getPath(new URI(PATH_01)).getFileName();
         final Path path02 = provider.getPath(new URI(PATH_02)).getFileName();
@@ -117,7 +148,7 @@ public class PathTest {
                 () -> assertEquals(path01.toString(), "text.xls"),
                 () -> assertEquals(path02.toString(), "rgasser"),
                 () -> assertEquals(path01.isAbsolute(), false),
-                () -> assertEquals(path01.isAbsolute(), false)
+                () -> assertEquals(path02.isAbsolute(), false)
         );
     }
 
@@ -127,7 +158,7 @@ public class PathTest {
      * @throws URISyntaxException If one of the paths is wrong.
      */
     @Test
-    public void testRelativizeOnAbsolute() throws URISyntaxException {
+    void testRelativizeOnAbsolute() throws URISyntaxException {
         final SMBFileSystemProvider provider = new SMBFileSystemProvider();
         final Path path01 = provider.getPath(new URI(PATH_REL_IN_01));
         final Path path02 = provider.getPath(new URI(PATH_REL_IN_02));
