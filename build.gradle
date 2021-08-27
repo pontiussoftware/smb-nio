@@ -84,6 +84,6 @@ signing {
 }
 
 dependencies {
-    compile group: 'eu.agno3.jcifs', name: 'jcifs-ng', version: '2.1.5'
-    compile group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.7.0'
+    implementation group: 'eu.agno3.jcifs', name: 'jcifs-ng', version: '2.1.6'
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.7.2'
 }
