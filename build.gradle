@@ -13,7 +13,7 @@ plugins {
 }
 
 group 'ch.pontius.nio'
-version '0.8-SNAPSHOT'
+version '0.9-SNAPSHOT'
 
 repositories {
     mavenCentral()
