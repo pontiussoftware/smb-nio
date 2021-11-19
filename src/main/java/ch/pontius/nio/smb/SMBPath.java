@@ -1,19 +1,13 @@
 package ch.pontius.nio.smb;
 
-import jcifs.context.SingletonContext;
+import jcifs.CIFSContext;
 import jcifs.smb.SmbFile;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.ClosedFileSystemException;
-import java.nio.file.FileSystem;
-import java.nio.file.LinkOption;
-import java.nio.file.Path;
-import java.nio.file.WatchEvent;
-import java.nio.file.WatchKey;
-import java.nio.file.WatchService;
+import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -499,7 +493,11 @@ public final class SMBPath implements Path {
     SmbFile getSmbFile() throws IOException {
         if (!this.fileSystem.isOpen()) throw new ClosedFileSystemException();
         final String path = SMBPathUtil.mergePath(this.components, 0, this.components.length, this.absolute, this.folder);
-        return new SmbFile(this.fileSystem.getFQN() + path, SingletonContext.getInstance());
+        return new SmbFile(this.fileSystem.getFQN() + path, getContext());
+    }
+
+    private CIFSContext getContext() {
+        return fileSystem.getContext();
     }
 
     /**

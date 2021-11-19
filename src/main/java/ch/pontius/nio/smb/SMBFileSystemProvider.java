@@ -2,32 +2,21 @@ package ch.pontius.nio.smb;
 
 import jcifs.CIFSContext;
 import jcifs.CIFSException;
-import jcifs.config.PropertyConfiguration;
-import jcifs.context.BaseContext;
+import jcifs.Config;
+import jcifs.Configuration;
 import jcifs.context.SingletonContext;
+import jcifs.smb.NtlmPasswordAuthenticator;
 import jcifs.smb.SmbException;
 import jcifs.smb.SmbFile;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.file.AccessDeniedException;
-import java.nio.file.AccessMode;
-import java.nio.file.CopyOption;
-import java.nio.file.DirectoryStream;
-import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.FileStore;
-import java.nio.file.FileSystemAlreadyExistsException;
-import java.nio.file.FileSystemNotFoundException;
-import java.nio.file.LinkOption;
-import java.nio.file.NoSuchFileException;
-import java.nio.file.NotDirectoryException;
-import java.nio.file.OpenOption;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
+import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileAttribute;
@@ -38,9 +27,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * This class acts as a service-provider class for SMB/CIFS based file systems. Internally, it uses jCIFS to provide
@@ -56,6 +42,8 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
 
     /** Local cache of {@link SMBFileSystem} instances. */
     final Map<String, SMBFileSystem> fileSystemCache;
+
+    private CIFSContext context;
 
     /** Default constructor for {@link SMBFileSystemProvider}. */
     public SMBFileSystemProvider() {
@@ -482,20 +470,28 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
      * @param env The environment map to convert.
      */
     private CIFSContext contextFromMap(Map<String, ?> env) {
-        if (env == null || env.isEmpty()) {
-            return SingletonContext.getInstance();
-        } else {
+        if (context == null) {
             final Properties properties = new Properties();
-            for (Map.Entry<String,?> e : env.entrySet()) {
-                properties.put(e.getKey(), e.getValue());
+            if (env != null) {
+                for (Map.Entry<String, ?> e : env.entrySet()) {
+                    properties.put(e.getKey(), e.getValue());
+                }
             }
             try {
-                return new BaseContext(new PropertyConfiguration(properties));
+                SingletonContext.init(properties);
+                CIFSContext singletonContext = SingletonContext.getInstance();
+                properties.putAll(System.getProperties());
+                if (Config.getBoolean(properties, "smb-nio.useNtlmPasswordAuthenticator", false)) {
+                    Configuration config = singletonContext.getConfig();
+                    singletonContext = singletonContext.withCredentials(new NtlmPasswordAuthenticator(config.getDefaultDomain(), config.getDefaultUsername(), config.getDefaultPassword()));
+                }
+                context = singletonContext;
             } catch (CIFSException e) {
                 LOGGER.warn("There was a problem when parsing CIFS configuration from environment map. Falling back to default context. Message:" + e.getMessage());
-                return SingletonContext.getInstance();
+                context = SingletonContext.getInstance();
             }
         }
+        return context;
     }
 
     /**
@@ -544,4 +540,9 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
         }
         return authority;
     }
+
+    public CIFSContext getContext() {
+        return context;
+    }
+
 }
