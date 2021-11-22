@@ -477,19 +477,13 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
                     properties.put(e.getKey(), e.getValue());
                 }
             }
-            try {
-                SingletonContext.init(properties);
-                CIFSContext singletonContext = SingletonContext.getInstance();
-                properties.putAll(System.getProperties());
-                if (Config.getBoolean(properties, "smb-nio.useNtlmPasswordAuthenticator", false)) {
-                    Configuration config = singletonContext.getConfig();
-                    singletonContext = singletonContext.withCredentials(new NtlmPasswordAuthenticator(config.getDefaultDomain(), config.getDefaultUsername(), config.getDefaultPassword()));
-                }
-                context = singletonContext;
-            } catch (CIFSException e) {
-                LOGGER.warn("There was a problem when parsing CIFS configuration from environment map. Falling back to default context. Message:" + e.getMessage());
-                context = SingletonContext.getInstance();
+            CIFSContext singletonContext = SingletonContext.getInstance();
+            properties.putAll(System.getProperties());
+            if (Config.getBoolean(properties, "smb-nio.useNtlmPasswordAuthenticator", false)) {
+                Configuration config = singletonContext.getConfig();
+                singletonContext = singletonContext.withCredentials(new NtlmPasswordAuthenticator(config.getDefaultDomain(), config.getDefaultUsername(), config.getDefaultPassword()));
             }
+            context = singletonContext;
         }
         return context;
     }
