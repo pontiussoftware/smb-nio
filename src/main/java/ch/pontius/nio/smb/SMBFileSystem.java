@@ -1,18 +1,19 @@
 package ch.pontius.nio.smb;
 
-import jcifs.context.SingletonContext;
+import jcifs.CIFSContext;
 import jcifs.smb.SmbException;
 import jcifs.smb.SmbFile;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
-
 import java.nio.file.*;
 import java.nio.file.attribute.FileAttributeView;
 import java.nio.file.attribute.UserPrincipalLookupService;
 import java.nio.file.spi.FileSystemProvider;
-
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -125,7 +126,7 @@ public final class SMBFileSystem extends FileSystem {
     public Iterable<Path> getRootDirectories() {
         if (!this.isOpen()) throw new ClosedFileSystemException();
         try {
-            SmbFile file = new SmbFile(SMBFileSystem.SMB_SCHEME + SMBFileSystem.SCHEME_SEPARATOR + this.identifier + "/", SingletonContext.getInstance());
+            SmbFile file = new SmbFile(SMBFileSystem.SMB_SCHEME + SMBFileSystem.SCHEME_SEPARATOR + this.identifier + "/", getContext());
             return Arrays.stream(file.list()).map(s -> (Path)(new SMBPath(this, "/" + s))).collect(Collectors.toList());
         } catch (MalformedURLException | SmbException e) {
             return new ArrayList<>(0);
@@ -141,7 +142,7 @@ public final class SMBFileSystem extends FileSystem {
     public Iterable<FileStore> getFileStores() {
         if (!this.isOpen()) throw new ClosedFileSystemException();
         try {
-            SmbFile file = new SmbFile(SMBFileSystem.SMB_SCHEME + SMBFileSystem.SCHEME_SEPARATOR + this.identifier + "/", SingletonContext.getInstance());
+            SmbFile file = new SmbFile(SMBFileSystem.SMB_SCHEME + SMBFileSystem.SCHEME_SEPARATOR + this.identifier + "/", getContext());
             return Arrays.stream(file.list()).map(s -> (FileStore)(new SMBFileStore(this, s))).collect(Collectors.toList());
         } catch (MalformedURLException | SmbException e) {
             return new ArrayList<>(0);
@@ -231,5 +232,9 @@ public final class SMBFileSystem extends FileSystem {
      */
     String getFQN() {
         return SMBFileSystem.SMB_SCHEME + SMBFileSystem.SCHEME_SEPARATOR + this.identifier;
+    }
+
+    public CIFSContext getContext() {
+        return provider.getContext();
     }
 }
