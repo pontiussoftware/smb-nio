@@ -17,7 +17,7 @@ The easiest way to use the library is to add it as a Maven dependency to your pr
   <dependency>
     <groupId>ch.pontius.nio</groupId>
     <artifactId>smb-nio</artifactId>
-    <version>0.9.0</version>
+    <version>0.10.0</version>
   </dependency>
 </dependencies>
 ```
