@@ -53,15 +53,19 @@ public final class SMBFileSystem extends FileSystem {
     /** The {@link SMBFileSystemProvider} instance this {@link SMBFileSystem} belongs to. */
     private final SMBFileSystemProvider provider;
 
+    /** The {@link CIFSContext} used by this {@link SMBFileSystem}. */
+    private final CIFSContext context;
+
     /**
      * Constructor for {@link SMBFileSystem}.
      *
      * @param provider The {@link SMBFileSystemProvider} instance associated with this {@link SMBFileSystem}.
      * @param authority The identifier of the {@link SMBFileSystem}; usually defaults to the URI's authority part.
      */
-    SMBFileSystem(SMBFileSystemProvider provider, String authority) {
+    SMBFileSystem(SMBFileSystemProvider provider, String authority, CIFSContext context) {
         this.identifier = authority;
         this.provider = provider;
+        this.context = context;
     }
 
     /**
@@ -126,7 +130,7 @@ public final class SMBFileSystem extends FileSystem {
     public Iterable<Path> getRootDirectories() {
         if (!this.isOpen()) throw new ClosedFileSystemException();
         try {
-            SmbFile file = new SmbFile(SMBFileSystem.SMB_SCHEME + SMBFileSystem.SCHEME_SEPARATOR + this.identifier + "/", getContext());
+            SmbFile file = new SmbFile(SMBFileSystem.SMB_SCHEME + SMBFileSystem.SCHEME_SEPARATOR + this.identifier + "/", this.context);
             return Arrays.stream(file.list()).map(s -> (Path)(new SMBPath(this, "/" + s))).collect(Collectors.toList());
         } catch (MalformedURLException | SmbException e) {
             return new ArrayList<>(0);
@@ -142,7 +146,7 @@ public final class SMBFileSystem extends FileSystem {
     public Iterable<FileStore> getFileStores() {
         if (!this.isOpen()) throw new ClosedFileSystemException();
         try {
-            SmbFile file = new SmbFile(SMBFileSystem.SMB_SCHEME + SMBFileSystem.SCHEME_SEPARATOR + this.identifier + "/", getContext());
+            SmbFile file = new SmbFile(SMBFileSystem.SMB_SCHEME + SMBFileSystem.SCHEME_SEPARATOR + this.identifier + "/", this.context);
             return Arrays.stream(file.list()).map(s -> (FileStore)(new SMBFileStore(this, s))).collect(Collectors.toList());
         } catch (MalformedURLException | SmbException e) {
             return new ArrayList<>(0);
@@ -212,8 +216,17 @@ public final class SMBFileSystem extends FileSystem {
      * @throws UnsupportedOperationException Always
      */
     @Override
-    public WatchService newWatchService() throws IOException {
+    public WatchService newWatchService() {
         throw new UnsupportedOperationException("The SMBFileSystem does not support WatchService.");
+    }
+
+    /**
+     * Getter for the {@link CIFSContext} used by this {@link SMBFileSystem}. For internal use only.
+     *
+     * @return {@link CIFSContext}
+     */
+    CIFSContext getContext() {
+        return this.context;
     }
 
     /**
@@ -232,9 +245,5 @@ public final class SMBFileSystem extends FileSystem {
      */
     String getFQN() {
         return SMBFileSystem.SMB_SCHEME + SMBFileSystem.SCHEME_SEPARATOR + this.identifier;
-    }
-
-    public CIFSContext getContext() {
-        return provider.getContext();
     }
 }

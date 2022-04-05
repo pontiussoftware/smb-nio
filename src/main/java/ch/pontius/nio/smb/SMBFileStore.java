@@ -75,7 +75,7 @@ public final class SMBFileStore extends FileStore {
     @Override
     public long getTotalSpace() throws IOException {
         if (!this.fileSystem.isOpen()) throw new ClosedFileSystemException();
-        return new SmbFile(this.name()).length();
+        return new SmbFile(this.name(), this.fileSystem.getContext()).length();
     }
 
     /**
@@ -88,7 +88,7 @@ public final class SMBFileStore extends FileStore {
     @Override
     public long getUsableSpace() throws IOException {
         if (!this.fileSystem.isOpen()) throw new ClosedFileSystemException();
-        return new SmbFile(this.name()).getDiskFreeSpace();
+        return new SmbFile(this.name(), this.fileSystem.getContext()).getDiskFreeSpace();
     }
 
     /**
@@ -101,7 +101,7 @@ public final class SMBFileStore extends FileStore {
     @Override
     public long getUnallocatedSpace() throws IOException {
         if (!this.fileSystem.isOpen()) throw new ClosedFileSystemException();
-        return new SmbFile(this.name()).getDiskFreeSpace();
+        return new SmbFile(this.name(), this.fileSystem.getContext()).getDiskFreeSpace();
     }
 
     /**
@@ -143,7 +143,7 @@ public final class SMBFileStore extends FileStore {
      * @throws UnsupportedOperationException Always
      */
     @Override
-    public Object getAttribute(String attribute) throws IOException {
+    public Object getAttribute(String attribute) {
         throw new UnsupportedOperationException("File store attribute views are not supported for the current implementation of SMBFileStore.");
     }
 

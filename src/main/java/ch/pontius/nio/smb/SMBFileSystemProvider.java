@@ -4,6 +4,8 @@ import jcifs.CIFSContext;
 import jcifs.CIFSException;
 import jcifs.Config;
 import jcifs.Configuration;
+import jcifs.config.PropertyConfiguration;
+import jcifs.context.BaseContext;
 import jcifs.context.SingletonContext;
 import jcifs.smb.NtlmPasswordAuthenticator;
 import jcifs.smb.SmbException;
@@ -33,8 +35,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * all the file access functionality.
  *
  * @author      Ralph Gasser
- * @version     1.1
- * @since       1.0
+ * @version     1.2.0
+ * @since       1.0.0
  */
 public final class SMBFileSystemProvider extends FileSystemProvider {
     /** Internal {@link Logger} instance used by {@link SMBFileSystemProvider}. */
@@ -42,8 +44,6 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
 
     /** Local cache of {@link SMBFileSystem} instances. */
     final Map<String, SMBFileSystem> fileSystemCache;
-
-    private CIFSContext context;
 
     /** Default constructor for {@link SMBFileSystemProvider}. */
     public SMBFileSystemProvider() {
@@ -93,7 +93,7 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
 
             /* Tries to create a new SMBFileSystem. */
             if (this.fileSystemCache.containsKey(authority)) throw new FileSystemAlreadyExistsException("Filesystem for the provided server 'smb://" + authority + "' does already exist.");
-            SMBFileSystem system = new SMBFileSystem(this, authority);
+            SMBFileSystem system = new SMBFileSystem(this, authority, context);
             this.fileSystemCache.put(authority, system);
             return system;
         } catch (UnsupportedEncodingException e) {
@@ -117,7 +117,7 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
 
         /* Constructs a canonical authority string, taking all possible ways to provide credentials into consideration. */
         try {
-            final CIFSContext context = this.contextFromMap(null);
+            final CIFSContext context = this.contextFromMap(new HashMap<>());
             final String authority = this.constructAuthority(uri, context);
 
             /* Tries to fetch an existing SMBFileSystem. */
@@ -145,7 +145,7 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
 
         /* Constructs a canonical authority string, taking all possible ways to provide credentials into consideration. */
         try {
-            final CIFSContext context = this.contextFromMap(null);
+            final CIFSContext context = this.contextFromMap(new HashMap<>());
             final String authority = this.constructAuthority(uri, context);
 
             /* Lookup authority string to determine, whether a new SMBFileSystem is required. */
@@ -326,6 +326,7 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
         for (CopyOption opt : options) {
             if (opt == StandardCopyOption.REPLACE_EXISTING) {
                 replaceExisting = true;
+                break;
             }
         }
 
@@ -470,22 +471,20 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
      * @param env The environment map to convert.
      */
     private CIFSContext contextFromMap(Map<String, ?> env) {
-        if (context == null) {
-            final Properties properties = new Properties();
-            if (env != null) {
-                for (Map.Entry<String, ?> e : env.entrySet()) {
-                    properties.put(e.getKey(), e.getValue());
-                }
-            }
-            CIFSContext singletonContext = SingletonContext.getInstance();
-            properties.putAll(System.getProperties());
+        final Properties properties = new Properties();
+        properties.putAll(System.getProperties());
+        properties.putAll(env);
+        try {
+            CIFSContext context = new BaseContext(new PropertyConfiguration(properties));
             if (Config.getBoolean(properties, "smb-nio.useNtlmPasswordAuthenticator", false)) {
-                Configuration config = singletonContext.getConfig();
-                singletonContext = singletonContext.withCredentials(new NtlmPasswordAuthenticator(config.getDefaultDomain(), config.getDefaultUsername(), config.getDefaultPassword()));
+                Configuration config = context.getConfig();
+                context = context.withCredentials(new NtlmPasswordAuthenticator(config.getDefaultDomain(), config.getDefaultUsername(), config.getDefaultPassword()));
             }
-            context = singletonContext;
+            return context;
+        } catch (CIFSException e) {
+            LOGGER.warn("There was a problem when parsing CIFS configuration from environment map. Falling back to default context. Message:" + e.getMessage());
+            return SingletonContext.getInstance();
         }
-        return context;
     }
 
     /**
@@ -534,9 +533,4 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
         }
         return authority;
     }
-
-    public CIFSContext getContext() {
-        return context;
-    }
-
 }
