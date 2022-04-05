@@ -17,7 +17,7 @@ The easiest way to use the library is to add it as a Maven dependency to your pr
   <dependency>
     <groupId>ch.pontius.nio</groupId>
     <artifactId>smb-nio</artifactId>
-    <version>0.10.0</version>
+    <version>0.11.0</version>
   </dependency>
 </dependencies>
 ```
@@ -28,7 +28,7 @@ Once you have added the dependency, you should be able to create SMBPath objects
 final Path dir = Paths.get(new URI("smb://username:password@host/share/dir1/dir2/"));
 ```
 
-Or you can manually create a SMB file system using the following snippet. In this case, the default credentials will always be used.
+Or you can manually create an SMB file system using the following snippet. In this case, the default credentials will always be used.
 
 ```java
 final Map<String, Object> env = new HashMap<>(); 
@@ -36,7 +36,7 @@ env.put("jcifs.smb.client.username", "<username>");
 env.put("jcifs.smb.client.password", "<password>"); 
 env.put("jcifs.smb.client.domain", "<domain>");
 
-SmbFileSystem fileSystem = SmbFileSystemProvider.getDefault().newFileSystem(URI.create("smb://host), env);
+SmbFileSystem fileSystem = SMBFileSystemProvider().newFileSystem(URI.create("smb://host), env);
 Path dir = fileSystem.getPath("/dir1", "dir2/");
 ```
 
