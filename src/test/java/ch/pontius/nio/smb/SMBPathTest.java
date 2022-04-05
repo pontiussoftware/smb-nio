@@ -55,15 +55,15 @@ class SMBPathTest {
         final SMBPath path02 = provider.getPath(new URI(PATH_02));
         final SMBPath path03 = provider.getPath(new URI(PATH_04));
         assertAll("SMBPath definition",
-                () -> assertEquals(path01.isAbsolute(), true),
-                () -> assertEquals(path02.isAbsolute(), true),
-                () -> assertEquals(path03.isAbsolute(), true),
-                () -> assertEquals(path01.isFolder(), false),
-                () -> assertEquals(path02.isFolder(), true),
-                () -> assertEquals(path03.isFolder(), false),
-                () -> assertEquals(path01.getFileSystem(), path02.getFileSystem()),
-                () -> assertNotEquals(path01.getFileSystem(), path03.getFileSystem()),
-                () -> assertNotEquals(path02.getFileSystem(), path03.getFileSystem())
+            () -> assertTrue(path01.isAbsolute()),
+            () -> assertTrue(path02.isAbsolute()),
+            () -> assertTrue(path03.isAbsolute()),
+            () -> assertFalse(path01.isFolder()),
+            () -> assertTrue(path02.isFolder()),
+            () -> assertFalse(path03.isFolder()),
+            () -> assertEquals(path01.getFileSystem(), path02.getFileSystem()),
+            () -> assertNotEquals(path01.getFileSystem(), path03.getFileSystem()),
+            () -> assertNotEquals(path02.getFileSystem(), path03.getFileSystem())
         );
     }
 
@@ -80,11 +80,11 @@ class SMBPathTest {
         final Path rightPath02 = provider.getPath(new URI(PATH_05));
         final Path rightPath03 = Paths.get("/home/rgasser/text.xls");
         assertAll("SMBPath.compareTo()",
-                () -> assertTrue(leftPath.compareTo(rightPath) > 0),
-                () -> assertTrue(rightPath.compareTo(leftPath) < 0),
-                () -> assertEquals(0, leftPath.compareTo(leftPath)),
-                () -> assertThrows(IllegalArgumentException.class, () -> leftPath.compareTo(rightPath02)),
-                () -> assertThrows(IllegalArgumentException.class, () -> leftPath.compareTo(rightPath03))
+            () -> assertTrue(leftPath.compareTo(rightPath) > 0),
+            () -> assertTrue(rightPath.compareTo(leftPath) < 0),
+            () -> assertEquals(0, leftPath.compareTo(leftPath)),
+            () -> assertThrows(IllegalArgumentException.class, () -> leftPath.compareTo(rightPath02)),
+            () -> assertThrows(IllegalArgumentException.class, () -> leftPath.compareTo(rightPath03))
         );
     }
 
@@ -104,13 +104,13 @@ class SMBPathTest {
         final Path path06 = provider.getPath(new URI(PATH_06));
 
         assertAll("SMBPath.equals()",
-                () -> assertEquals(path01a, path01b),
-                () -> assertNotEquals(path01a, path02),
-                () -> assertNotEquals(path01b, path02),
-                () -> assertNotEquals(path01a, path03),
-                () -> assertNotEquals(path01b, path03),
-                () -> assertNotEquals(path02, path06),
-                () -> assertNotEquals(path02, path06)
+            () -> assertEquals(path01a, path01b),
+            () -> assertNotEquals(path01a, path02),
+            () -> assertNotEquals(path01b, path02),
+            () -> assertNotEquals(path01a, path03),
+            () -> assertNotEquals(path01b, path03),
+            () -> assertNotEquals(path02, path06),
+            () -> assertNotEquals(path02, path06)
         );
     }
 
@@ -127,10 +127,10 @@ class SMBPathTest {
         final Path test = provider.getPath(new URI(PATH_02));
         final Path testNull = provider.getPath(new URI(PATH_ROOT));
         assertAll("SMBPath.getParent()",
-                () -> assertEquals(parent, test),
-                () -> assertNotEquals(path01a, test),
-                () -> assertNotEquals(path01a, parent),
-                () -> assertNull(testNull.getParent())
+            () -> assertEquals(parent, test),
+            () -> assertNotEquals(path01a, test),
+            () -> assertNotEquals(path01a, parent),
+            () -> assertNull(testNull.getParent())
         );
     }
 
@@ -145,10 +145,10 @@ class SMBPathTest {
         final Path path01 = provider.getPath(new URI(PATH_01)).getFileName();
         final Path path02 = provider.getPath(new URI(PATH_02)).getFileName();
         assertAll("SMBPath.getFilename()",
-                () -> assertEquals(path01.toString(), "text.xls"),
-                () -> assertEquals(path02.toString(), "rgasser"),
-                () -> assertEquals(path01.isAbsolute(), false),
-                () -> assertEquals(path02.isAbsolute(), false)
+            () -> assertEquals(path01.toString(), "text.xls"),
+            () -> assertEquals(path02.toString(), "rgasser"),
+            () -> assertEquals(path01.isAbsolute(), false),
+            () -> assertEquals(path02.isAbsolute(), false)
         );
     }
 
@@ -164,20 +164,20 @@ class SMBPathTest {
         final Path path02 = provider.getPath(new URI(PATH_REL_IN_02));
         final Path path03 = provider.getPath(new URI(PATH_REL_IN_03));
         assertAll("SMBPath.testRelativizeOnAbsolute()",
-                () -> assertEquals(path01.relativize(path02).toString(), PATH_REL_OUT_01),
-                () -> assertEquals(path02.relativize(path01).toString(), PATH_REL_OUT_02),
-                () -> assertEquals(path02.relativize(path02).toString(), PATH_REL_OUT_03),
-                () -> assertEquals(path01.relativize(path01).toString(), PATH_REL_OUT_03),
-                () -> assertEquals(path01.relativize(path03).toString(), PATH_REL_OUT_04),
-                () -> assertEquals(path02.relativize(path03).toString(), PATH_REL_OUT_05),
-                () -> assertEquals(path03.relativize(path01).toString(), PATH_REL_OUT_06),
-                () -> assertFalse(path01.relativize(path02).isAbsolute()),
-                () -> assertFalse(path02.relativize(path01).isAbsolute()),
-                () -> assertFalse(path02.relativize(path02).isAbsolute()),
-                () -> assertFalse(path01.relativize(path01).isAbsolute()),
-                () -> assertFalse(path01.relativize(path03).isAbsolute()),
-                () -> assertFalse(path02.relativize(path03).isAbsolute()),
-                () -> assertFalse(path03.relativize(path01).isAbsolute())
+            () -> assertEquals(path01.relativize(path02).toString(), PATH_REL_OUT_01),
+            () -> assertEquals(path02.relativize(path01).toString(), PATH_REL_OUT_02),
+            () -> assertEquals(path02.relativize(path02).toString(), PATH_REL_OUT_03),
+            () -> assertEquals(path01.relativize(path01).toString(), PATH_REL_OUT_03),
+            () -> assertEquals(path01.relativize(path03).toString(), PATH_REL_OUT_04),
+            () -> assertEquals(path02.relativize(path03).toString(), PATH_REL_OUT_05),
+            () -> assertEquals(path03.relativize(path01).toString(), PATH_REL_OUT_06),
+            () -> assertFalse(path01.relativize(path02).isAbsolute()),
+            () -> assertFalse(path02.relativize(path01).isAbsolute()),
+            () -> assertFalse(path02.relativize(path02).isAbsolute()),
+            () -> assertFalse(path01.relativize(path01).isAbsolute()),
+            () -> assertFalse(path01.relativize(path03).isAbsolute()),
+            () -> assertFalse(path02.relativize(path03).isAbsolute()),
+            () -> assertFalse(path03.relativize(path01).isAbsolute())
         );
     }
 }
