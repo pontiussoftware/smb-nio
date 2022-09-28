@@ -7,7 +7,7 @@ plugins {
 }
 
 group 'ch.pontius.nio'
-version '0.11-SNAPSHOT'
+version '0.12-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -78,8 +78,8 @@ signing {
 }
 
 dependencies {
-    implementation group: 'eu.agno3.jcifs', name: 'jcifs-ng', version: '2.1.7'
-    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.7.2'
+    implementation group: 'eu.agno3.jcifs', name: 'jcifs-ng', version: '2.1.8'
+    testImplementation group: 'org.junit.jupiter', name: 'junit-jupiter-api', version: '5.9.1'
 }
 
 test {
