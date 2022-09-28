@@ -148,15 +148,15 @@ public final class SeekableSMBByteChannel implements SeekableByteChannel {
     }
 
     /**
-     * Closes the  current {@link SeekableSMBByteChannel}. After that, is is not possible to either read from or
-     * write to the channel.
+     * Closes the  current {@link SeekableSMBByteChannel}. After that, it is not possible to either read from or write to the channel.
      *
      * @throws IOException If something goes wrong while closing the channel.
      */
     @Override
     public synchronized void close() throws IOException {
-        if (!this.open) return;
-        this.open = false;
-        this.random.close();
+        if (this.open) {
+            this.open = false;
+            this.random.close();
+        }
     }
 }
