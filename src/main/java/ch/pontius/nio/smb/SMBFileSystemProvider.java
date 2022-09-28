@@ -35,7 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * all the file access functionality.
  *
  * @author      Ralph Gasser
- * @version     1.2.0
+ * @version     1.2.1
  * @since       1.0.0
  */
 public final class SMBFileSystemProvider extends FileSystemProvider {
@@ -503,34 +503,35 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
      */
     private String constructAuthority(URI uri, CIFSContext context) throws UnsupportedEncodingException {
         /* The authority string. */
-        String authority;
+        final StringBuilder builder = new StringBuilder();
 
-        /* Check if URI encodes credentials. Credentials are used in the following order: */
-        if (uri.getAuthority().contains(SMBFileSystem.CREDENTIALS_SEPARATOR)) {
-            authority = uri.getAuthority();
-        } else {
-            final StringBuilder builder = new StringBuilder();
-            if (context != null) {
-                if (context.getConfig().getDefaultDomain() != null) {
-                    builder.append(context.getConfig().getDefaultDomain());
-                    builder.append(";");
-                }
-                if (context.getConfig().getDefaultUsername() != null) {
-                    builder.append(URLEncoder.encode(context.getConfig().getDefaultUsername(), "UTF-8"));
-                    if (context.getConfig().getDefaultPassword() != null) {
-                        builder.append(":");
-                        builder.append(URLEncoder.encode(context.getConfig().getDefaultPassword(), "UTF-8"));
-                    }
+        /*
+         * Check if URI encodes credentials. Credentials are used in the following order:
+         */
+        if (uri.getAuthority() != null && uri.getAuthority().contains(SMBFileSystem.CREDENTIALS_SEPARATOR)) {
+            builder.append(uri.getAuthority());
+        } else if (context != null) {
+            if (context.getConfig().getDefaultDomain() != null) {
+                builder.append(context.getConfig().getDefaultDomain());
+                builder.append(";");
+            }
+            if (context.getConfig().getDefaultUsername() != null) {
+                builder.append(URLEncoder.encode(context.getConfig().getDefaultUsername(), "UTF-8"));
+                if (context.getConfig().getDefaultPassword() != null) {
+                    builder.append(":");
+                    builder.append(URLEncoder.encode(context.getConfig().getDefaultPassword(), "UTF-8"));
                 }
             }
 
-            if (builder.length() > 0) {
-                builder.append(SMBFileSystem.CREDENTIALS_SEPARATOR).append(uri.getAuthority());
-                authority = builder.toString();
-            } else {
-                authority = uri.getAuthority();
+            if (uri.getAuthority() != null) {
+                if (builder.length() > 0) {
+                    builder.append(SMBFileSystem.CREDENTIALS_SEPARATOR).append(uri.getAuthority());
+                    builder.append(builder.toString());
+                } else {
+                    builder.append(uri.getAuthority());
+                }
             }
         }
-        return authority;
+        return builder.toString();
     }
 }
