@@ -1,3 +1,9 @@
+# Files related to the project
+.idea
+.gradle
+build
+out
+
 # Log file
 *.log
 
@@ -12,10 +18,3 @@ hs_err_pid*
 
 # IntelliJ
 *.iml
-.idea/*
-
-# Gradle
-.gradle/*
-
-# Build
-build/*
