@@ -526,7 +526,6 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
             if (uri.getAuthority() != null) {
                 if (builder.length() > 0) {
                     builder.append(SMBFileSystem.CREDENTIALS_SEPARATOR).append(uri.getAuthority());
-                    builder.append(builder.toString());
                 } else {
                     builder.append(uri.getAuthority());
                 }
