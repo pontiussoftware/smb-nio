@@ -461,8 +461,10 @@ public final class SMBFileSystemProvider extends FileSystemProvider {
     }
 
     @Override
-    public FileStore getFileStore(Path path) {
-        throw new UnsupportedOperationException("Access to FileStore is currently not supported by SMBFileSystemProvider.");
+    public FileStore getFileStore(Path path) throws IOException {
+        SMBPath smbPath = SMBPath.fromPath(path);
+        String share = smbPath.getSmbFile().getShare();
+        return new SMBFileStore((SMBFileSystem) smbPath.getFileSystem(), share);
     }
 
     /**
